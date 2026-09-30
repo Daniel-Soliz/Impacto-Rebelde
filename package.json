@@ -1,0 +1,10 @@
+{
+  "name": "impacto-rebelde",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --experimental-vm-modules --test tests/*.test.js",
+    "start": "python3 -m http.server 8080"
+  }
+}
