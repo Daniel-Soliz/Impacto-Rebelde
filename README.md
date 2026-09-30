@@ -1,6 +1,6 @@
 # Impacto Rebelde
 
-Jogo original de ação lateral para **computador**, inspirado no gênero run-and-gun. Arte procedural em pixel art e efeitos sonoros sintetizados, sem recursos de terceiros. Campanha solo com seis missões, seis chefões, resgate de civis, fuzil, metralhadora, escopeta, granadas, checkpoints, pausa e final.
+Jogo original de ação lateral para **computador**, inspirado no gênero run-and-gun. Arte procedural em pixel art e efeitos sonoros sintetizados, sem recursos de terceiros. Campanha solo com nove missões, nove chefões, resgate de civis, fuzil, metralhadora, escopeta, granadas, checkpoints, pausa e final.
 
 ## Jogar e publicar
 
@@ -20,7 +20,7 @@ Para desenvolvimento: `npm start` ou `python3 -m http.server 8080`, depois abra 
 | K | Granada |
 | Esc / P | Pausar / continuar |
 
-Destrua o chefão de cada missão e atravesse a bandeira à direita. Civis e caixas fornecem pontos, granadas, saúde ou armas temporárias. Sem armadilhas que exijam saltos impossíveis: o solo é contínuo e as plataformas oferecem posições alternativas. Três vidas iniciais; checkpoint a cada trecho. Ao perder as vidas, a missão pode ser reiniciada. A próxima missão concede uma vida adicional (máximo cinco).
+Destrua o chefão de cada missão e atravesse a bandeira à direita. Civis e caixas fornecem pontos, granadas, saúde ou armas temporárias. O solo é contínuo, mas perigos periódicos exigem pular ou esperar; a luz amarela e o símbolo ! avisam antes da ativação. Plataformas oferecem rotas alternativas. Inimigos tornam-se mais numerosos e resistentes e chefões aceleram os ataques ao longo da campanha. Três vidas iniciais; checkpoint a cada trecho. Ao perder as vidas, a missão pode ser reiniciada. A próxima missão concede uma vida adicional (máximo cinco).
 
 ## Offline e progresso
 
@@ -28,7 +28,7 @@ Depois do primeiro acesso completo em HTTPS ou localhost, o service worker armaz
 
 ## Testes
 
-`npm test` executa nove testes: seis mapas, saltos, aterrissagem, colisão contínua de projéteis, validação de save, controles, pausa, morte e reinício, recursos offline e progressão da campanha com combates reais simulados. A simulação da campanha usa invulnerabilidade controlada para verificar progressão, não dificuldade. O teste usa DOM/Canvas simulados em Node; não substitui validação visual em navegador. Física executada em passos fixos de 1/120 segundo; perda de foco pausa a partida. Veja `tests/engine.test.js` e `tests/campaign.test.js`. Testes automatizados não garantem ausência de todos os bugs; recomenda-se jogar a campanha completa antes de divulgação pública.
+`npm test` executa 12 testes: nove mapas, saltos, aterrissagem, colisão contínua de projéteis, validação de save, controles, pausa, morte e reinício, recursos offline e progressão da campanha com combates reais simulados. A simulação da campanha usa invulnerabilidade controlada para verificar progressão, não dificuldade. O teste usa DOM/Canvas simulados em Node; não substitui validação visual em navegador. Física executada em passos fixos de 1/120 segundo; perda de foco pausa a partida. Veja `tests/engine.test.js` e `tests/campaign.test.js`. Testes automatizados não garantem ausência de todos os bugs; recomenda-se jogar a campanha completa antes de divulgação pública.
 
 ## Arquivos
 
@@ -37,4 +37,4 @@ Depois do primeiro acesso completo em HTTPS ou localhost, o service worker armaz
 - `sw.js`: cache offline com escopo relativo, compatível com GitHub Pages.
 - `style.css`, `index.html`: interface e menus.
 
-Criado para Daniel Soliz. Personagens e cenários originais; não utiliza assets de Metal Slug. A primeira versão tem estética procedural simples e chefões com padrões de dificuldade progressiva.
+Criado para Daniel Soliz. Personagens e cenários originais; não utiliza assets de Metal Slug. A versão 2 inclui personagens com armaduras, pernas articuladas, armas sombreadas e três classes de soldados; nove conjuntos de plataformas e cenários; minas, gelo, fio, chamas e energia com aviso; chefões com rajadas crescentes, tiros rasteiros e projéteis em arco. Mapas novos: Deserto de Vidro, Porto da Tempestade e Cidade Suspensa.
