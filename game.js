@@ -25,11 +25,30 @@ window.addEventListener('keydown',e=>{if(!gameKeys.includes(e.code))return;e.pre
 window.addEventListener('keyup',e=>{keys.delete(e.code);if(e.code==='Space')releaseJump();});
 window.addEventListener('blur',()=>{clearInput();if(mode==='play')pause();});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){clearInput();if(mode==='play')pause();}});
+function releaseTouchState(held){
+ if(held.code&&! [...activePointers.values()].some(v=>v.code===held.code))touchKeys.delete(held.code);
+ if(held.button&&! [...activePointers.values()].some(v=>v.button===held.button))held.button.classList.remove('pressed');
+ if(held.code==='Space')releaseJump();
+}
 export function bindTouchButton(button){
-  const release=e=>{const held=activePointers.get(e.pointerId);if(!held||held.button!==button)return;activePointers.delete(e.pointerId);if(![...activePointers.values()].some(v=>v.code===held.code))touchKeys.delete(held.code);if(![...activePointers.values()].some(v=>v.button===button))button.classList.remove('pressed');if(held.code==='Space')releaseJump();};
-  button.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play'||activePointers.has(e.pointerId)||(e.pointerType==='mouse'&&e.button!==0))return;const code=button.dataset.key;const first=!isPressed(code);activePointers.set(e.pointerId,{code,button});touchKeys.add(code);button.classList.add('pressed');try{button.setPointerCapture(e.pointerId);}catch{}if(first)pressAction(code);});
-  for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,release);
-  button.addEventListener('contextmenu',e=>e.preventDefault());
+ const release=e=>{const held=activePointers.get(e.pointerId);if(!held||held.owner!==button)return;activePointers.delete(e.pointerId);releaseTouchState(held);};
+ button.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play'||activePointers.has(e.pointerId)||(e.pointerType==='mouse'&&e.button!==0))return;const code=button.dataset.key;const first=!isPressed(code);activePointers.set(e.pointerId,{code,button,owner:button});touchKeys.add(code);button.classList.add('pressed');try{button.setPointerCapture(e.pointerId);}catch{}if(first)pressAction(code);});
+ button.addEventListener('pointermove',e=>{
+  const held=activePointers.get(e.pointerId);if(!held||held.owner!==button||!button.closest?.('.movement-pad'))return;
+  e.preventDefault();const pad=button.closest('.movement-pad');const hit=document.elementFromPoint?.(e.clientX,e.clientY);let next=hit?.closest?.('[data-key]');
+  if(!next||!pad.contains(next)){
+   next=null;
+   if(hit&&pad.contains(hit)){
+    let distance=Infinity;for(const candidate of pad.querySelectorAll('[data-key]')){const r=candidate.getBoundingClientRect(),d=Math.hypot(e.clientX-r.left-r.width/2,e.clientY-r.top-r.height/2);if(d<distance){distance=d;next=candidate;}}
+   }
+  }
+  if(next===held.button)return;
+  activePointers.delete(e.pointerId);releaseTouchState(held);
+  const code=next?.dataset.key??null;activePointers.set(e.pointerId,{code,button:next,owner:button});
+  if(next){touchKeys.add(code);next.classList.add('pressed');}
+ });
+ for(const event of ['pointerup','pointercancel','lostpointercapture'])button.addEventListener(event,release);
+ button.addEventListener('contextmenu',e=>e.preventDefault());
 }
 document.querySelectorAll?.('[data-key]').forEach(bindTouchButton);
 const touchControls=$('.touch-controls'),touchToggle=$('#touch-toggle');let touchEnabled=(window.matchMedia?.('(pointer: coarse)').matches??false)||(navigator.maxTouchPoints>0);

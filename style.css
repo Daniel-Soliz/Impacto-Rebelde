@@ -8,7 +8,7 @@
 /* Automatic landscape presentation when native orientation lock is unavailable. */
 body.mobile-session{overflow:hidden}
 body.mobile-session .game-shell{position:fixed;z-index:50;inset:0;width:100vw;height:100dvh;border-radius:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0b131b;padding:8px;gap:0}
-body.mobile-session .stage{width:min(100%,calc((100dvh - 145px)*16/9));flex-shrink:0}
+body.mobile-session .stage{width:min(100%,calc((100dvh - 177px)*16/9));flex-shrink:0}
 body.mobile-session .touch-controls{width:min(100%,960px);padding:6px 12px 8px}
 body.mobile-session .touch-top{margin-bottom:4px}
 body.mobile-session .touch-top>span{margin-right:auto;max-width:none}
@@ -23,7 +23,16 @@ body.mobile-session .panel .eyebrow{font-size:7px;margin-bottom:6px}
 body.mobile-session .panel .primary{padding:9px 12px;font-size:10px}
 @media(orientation:portrait){
  body.mobile-session .game-shell{inset:auto;left:50%;top:50%;width:100dvh;height:100vw;transform:translate(-50%,-50%) rotate(90deg);padding:8px max(8px,env(safe-area-inset-top))}
- body.mobile-session .stage{width:min(100%,calc((100vw - 145px)*16/9))}
+ body.mobile-session .stage{width:min(100%,calc((100vw - 177px)*16/9))}
  body.mobile-session .touch-controls{width:min(100%,960px)}
  body.mobile-session .touch-pad{gap:18px}
 }
+
+/* Larger targets and a continuous directional touch surface. */
+.movement-pad,.direction-row{touch-action:none}
+body.mobile-session .touch-pad button{width:60px;height:52px;font-size:24px;border-radius:14px}
+body.mobile-session .touch-pad small{font-size:8px}
+body.mobile-session .touch-pad .fire-button{width:76px;height:66px;font-size:28px}
+body.mobile-session .movement-pad{gap:5px}
+body.mobile-session .action-pad,body.mobile-session .direction-row{gap:8px}
+@media(max-width:400px){body:not(.mobile-session) .touch-pad button{width:46px;height:52px}body:not(.mobile-session) .touch-pad .fire-button{width:58px;height:64px}}
