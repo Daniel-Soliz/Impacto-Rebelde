@@ -36,3 +36,22 @@ body.mobile-session .touch-pad .fire-button{width:76px;height:66px;font-size:28p
 body.mobile-session .movement-pad{gap:5px}
 body.mobile-session .action-pad,body.mobile-session .direction-row{gap:8px}
 @media(max-width:400px){body:not(.mobile-session) .touch-pad button{width:46px;height:52px}body:not(.mobile-session) .touch-pad .fire-button{width:58px;height:64px}}
+
+/* Full-size playfield with floating touch controls. */
+.action-pad{touch-action:none}
+body.mobile-session .game-shell{padding:0}
+body.mobile-session .stage{width:min(100%,calc(100dvh * 16/9));border:0;border-radius:0;box-shadow:none}
+body.mobile-session .touch-controls{position:absolute;inset:0;width:100%;border:0;border-radius:0;background:none;padding:0;pointer-events:none}
+body.mobile-session .touch-top{position:absolute;top:68px;right:max(12px,env(safe-area-inset-right));gap:8px;pointer-events:auto}
+body.mobile-session .touch-top>span{display:none}
+body.mobile-session .touch-top button{background:#102532b3;border:1px solid #a4cbdd66;backdrop-filter:blur(8px);border-radius:20px;padding:8px 14px;min-height:34px;font-size:10px}
+body.mobile-session .touch-pad{position:absolute;left:max(16px,env(safe-area-inset-left));right:max(16px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));pointer-events:none}
+body.mobile-session .movement-pad,body.mobile-session .action-pad{pointer-events:auto}
+body.mobile-session .touch-pad button{background:#17364db0;border:1px solid #b9e6ff77;backdrop-filter:blur(6px);box-shadow:0 3px 12px #0004;border-radius:18px;text-shadow:0 1px 3px #0008}
+body.mobile-session .touch-pad .fire-button{background:#ffba55d9;border-color:#ffe0a6;text-shadow:none}
+body.mobile-session .touch-pad button.pressed{background:#82c7e3dc;border-color:#e4f7ff;color:#102532;transform:scale(.94)}
+body.mobile-session .touch-pad .fire-button.pressed{background:#ffe4a9}
+body.mobile-session .game-shell:has(.overlay:not([hidden])) .touch-pad{opacity:.18;pointer-events:none}
+body.mobile-session .game-shell:has(.overlay:not([hidden])) .touch-pad button{pointer-events:none}
+@media(orientation:portrait){body.mobile-session .game-shell{padding:0}body.mobile-session .stage{width:min(100%,calc(100vw * 16/9))}}
+@media(max-height:340px) and (orientation:landscape){body.mobile-session .touch-pad button{width:54px;height:46px}body.mobile-session .touch-pad .fire-button{width:66px;height:58px}body.mobile-session .touch-pad{bottom:12px}body.mobile-session .touch-top{top:52px}}

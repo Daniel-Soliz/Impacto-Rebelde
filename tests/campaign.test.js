@@ -32,3 +32,11 @@ test('one captured finger slides right, left, aim up and neutral while a second 
  move(null);t.step(1);assert.equal(t.state().p.vx,0);
  move(right.b);t.step(1);assert.ok(t.state().p.vx>0);right.events.pointerup({pointerId:1});t.step(1);assert.equal(t.state().p.vx,0);fire.events.pointercancel({pointerId:2});
 });
+
+test('sliding among action buttons triggers jump, automatic fire and one grenade per entry',async()=>{
+ const {t,bind,setHit}=await harness();t.start();const list=[],pad={contains:b=>list.includes(b),querySelectorAll:()=>list};
+ function make(key){const events={},b={dataset:{key},classList:{add(){},remove(){}},closest:s=>s==='.action-pad'?pad:s==='.movement-pad'?null:b,setPointerCapture(){},addEventListener:(n,fn)=>events[n]=fn};list.push(b);bind(b);return{b,events};}
+ const fire=make('KeyJ'),jump=make('Space'),grenade=make('KeyK');fire.events.pointerdown({pointerId:10,pointerType:'touch',preventDefault(){}});t.step(1);assert.ok(t.state().shots.length);
+ const move=target=>{setHit(target);fire.events.pointermove({pointerId:10,clientX:0,clientY:0,preventDefault(){}});};
+ move(jump.b);t.step(1);assert.ok(t.state().p.vy<0);move(grenade.b);assert.equal(t.state().p.ammo,7);assert.ok(t.state().p.vy>=-240);move(grenade.b);assert.equal(t.state().p.ammo,7);move(fire.b);t.state().p.shot=0;t.step(1);assert.ok(t.state().shots.length>1);fire.events.pointerup({pointerId:10});
+});
