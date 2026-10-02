@@ -46,3 +46,11 @@ Controles de toque aparecem automaticamente em dispositivos com ponteiro de toqu
 O layout funciona em pé e deitado; em paisagem, a área do jogo e os controles cabem na altura disponível. Tela cheia inclui os controles quando o navegador suporta Fullscreen API. Em navegadores sem suporte, use o modo paisagem. Girar ou sair da página pausa o jogo e libera comandos para evitar movimento preso. Atualização de cache v3-mobile mantém os controles disponíveis offline.
 
 Ao iniciar no celular, o site ativa a apresentação horizontal automaticamente. Tenta tela cheia e bloqueio de orientação quando suportados; se o navegador recusar, gira a interface com CSS. MENU retorna à página e libera a orientação. O navegador pode exigir o toque em INICIAR para permitir tela cheia.
+
+## Android offline
+
+O projeto Android está em `android/`. O workflow `android-apk.yml` empacota HTML, JavaScript, CSS e todas as imagens dentro de um APK. O WebView abre os recursos locais pelo WebViewAssetLoader; o aplicativo não solicita permissão de internet. Android 6 ou superior é necessário.
+
+O arquivo `Impacto-Rebelde.apk` é publicado no release `android-offline-v1`. Pode ser baixado no site e enviado como arquivo para outra pessoa. O destinatário instala o APK no próprio Android; não precisa carregar o site antes. É um build de teste assinado, para instalação direta, sem publicação na Play Store. Como a assinatura de teste pode mudar entre builds, uma atualização pode exigir desinstalação e apagar o progresso. Uma distribuição com atualizações contínuas exige uma chave de assinatura de produção guardada em segurança.
+
+No navegador, abra o site com internet uma vez e espere `PRONTO PARA JOGAR OFFLINE`. O cache guarda código e imagens das nove fases. Se os dados do navegador forem limpos, é necessário carregar novamente com internet. Navegação offline usa o mesmo endereço salvo; um navegador diferente não compartilha esse cache.
