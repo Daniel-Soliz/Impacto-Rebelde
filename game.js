@@ -7,7 +7,7 @@ function toast(text){$('#toast').textContent=text;$('#toast').classList.add('sho
 function persist(won=false){try{localStorage.setItem('impacto-rebelde-v1',JSON.stringify({level,score,won}));save={level,score,won};}catch{toast('Armazenamento indisponível: progresso nesta sessão.');}}
 function screen(title,description,label,action,eyebrow='OPERAÇÃO AURORA'){clearInput();overlay.hidden=false;$('#title').innerHTML=title;$('#description').textContent=description;$('#eyebrow').textContent=eyebrow;primary.textContent=label;primary.onclick=action;secondary.hidden=true;$('#hint').textContent=touchEnabled?'Use os botões na tela · Combine movimento, pulo e tiro.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
 function start(i=0,continuing=false){level=i;score=continuing?(save?.score||0):0;lives=3;loadLevel();}
-function loadLevel(){p=makePlayer();platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);shots=[];grenades=[];particles=[];pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();}
+function loadLevel(){p=makePlayer();platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);shots=[];grenades=[];particles=[];pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();enterMobileView();}
 function burst(x,y,color,count=15){for(let i=0;i<count;i++)particles.push({x,y,vx:rand(-200,200),vy:rand(-220,100),life:rand(.2,.7),color,size:rand(2,6)});}
 function damage(amount){if(p.inv>0||mode!=='play')return;p.hp-=amount;p.inv=1.15;shake=8;burst(p.x+12,p.y+20,'#ffa06a',8);tone(100,.14,'sawtooth');if(p.hp<=0){lives--;if(lives>0){p=makePlayer();p.x=checkpoint;p.inv=2.5;shots=shots.filter(s=>s.friendly);toast('Reagrupando no checkpoint.');}else{mode='over';screen('MISSÃO<br><em>INTERROMPIDA</em>','A resistência ainda precisa de você. Tente novamente a missão atual.','TENTAR NOVAMENTE',()=>{lives=3;loadLevel();});}}}
 function hitEnemy(e,amount){if(e.dead)return;e.hp-=amount;e.flash=.09;if(e.hp<=0){e.dead=true;score+=e===boss?1500:100;burst(e.x+e.w/2,e.y+e.h/2,'#ffb75b',e===boss?65:18);tone(70,.25,'sawtooth',.05);if(e===boss){shake=16;shots=shots.filter(s=>s.friendly);pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});toast('Chefão neutralizado. Avance até o ponto de extração!');}else if(Math.random()<.12)pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});}}
@@ -32,13 +32,28 @@ export function bindTouchButton(button){
   button.addEventListener('contextmenu',e=>e.preventDefault());
 }
 document.querySelectorAll?.('[data-key]').forEach(bindTouchButton);
-const touchControls=$('.touch-controls'),touchToggle=$('#touch-toggle');let touchEnabled=window.matchMedia?.('(pointer: coarse)').matches??false;
-function showTouchControls(){touchControls.hidden=!touchEnabled;$('.mobile-tip').hidden=!touchEnabled;$('.controls').hidden=touchEnabled;touchToggle.setAttribute?.('aria-pressed',String(touchEnabled));touchToggle.textContent=touchEnabled?'CONTROLES: TOQUE':'CONTROLES: TECLADO';$('#hint').textContent=touchEnabled?'Use os botões na tela. Vire o celular para ampliar a visão.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
-touchToggle.onclick=()=>{touchEnabled=!touchEnabled;clearInput();if(mode==='play')pause();showTouchControls();};showTouchControls();
+const touchControls=$('.touch-controls'),touchToggle=$('#touch-toggle');let touchEnabled=(window.matchMedia?.('(pointer: coarse)').matches??false)||(navigator.maxTouchPoints>0);
+function showTouchControls(){touchControls.hidden=!touchEnabled;$('.mobile-tip').hidden=!touchEnabled;$('.controls').hidden=touchEnabled;touchToggle.setAttribute?.('aria-pressed',String(touchEnabled));touchToggle.textContent=touchEnabled?'CONTROLES: TOQUE':'CONTROLES: TECLADO';$('#hint').textContent=touchEnabled?'Use os botões na tela. O jogo abre em formato horizontal.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
+touchToggle.onclick=()=>{touchEnabled=!touchEnabled;if(!touchEnabled){mobileSession=false;document.body?.classList.remove('mobile-session');try{window.screen?.orientation?.unlock?.();}catch{}}clearInput();if(mode==='play')pause();showTouchControls();};showTouchControls();
 $('#touch-pause').onclick=()=>pause();
 $('#audio').onclick=()=>{audioOn=!audioOn;$('#audio').textContent='ÁUDIO: '+(audioOn?'ON':'OFF');if(audioOn)tone(440);};
-$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await $('#game-shell').requestFullscreen();}catch{toast('Tela cheia indisponível. Vire o celular de lado para ampliar.');}};
-window.addEventListener('resize',()=>{clearInput();if(mode==='play')pause();});
+let mobileSession=false;
+async function enterMobileView(){
+  if(!touchEnabled||mobileSession)return;
+  mobileSession=true;document.body?.classList.add('mobile-session');
+  const shell=$('#game-shell');
+  try{if(shell.requestFullscreen&&!document.fullscreenElement)await shell.requestFullscreen();}catch{}
+  try{await window.screen?.orientation?.lock?.('landscape');}catch{}
+}
+async function leaveMobileView(){
+  mobileSession=false;document.body?.classList.remove('mobile-session');clearInput();
+  try{window.screen?.orientation?.unlock?.();if(document.fullscreenElement)await document.exitFullscreen();}catch{}
+  mode='menu';screen('IMPACTO<br><em>REBELDE</em>','A resistência precisa de você. Escolha iniciar uma nova operação ou continuar sua campanha.','INICIAR OPERAÇÃO',()=>start());
+  if(save){secondary.hidden=false;secondary.onclick=()=>start(save.won?0:save.level,true);}
+}
+$('#touch-exit').onclick=()=>leaveMobileView();
+$('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await $('#game-shell').requestFullscreen();if(touchEnabled)try{await window.screen?.orientation?.lock?.('landscape');}catch{}}}catch{toast('O jogo já usa o layout horizontal no celular.');}};
+window.addEventListener('resize',()=>clearInput());
 
 function update(dt){time+=dt;if(mode!=='play'){for(const q of particles)q.life-=dt;return;}banner=Math.max(0,banner-dt);shake=Math.max(0,shake-30*dt);p.inv=Math.max(0,p.inv-dt);p.shot-=dt;p.grenade-=dt;p.buffer=Math.max(0,p.buffer-dt);p.weaponTime-=dt;if(p.weaponTime<=0)p.weapon=0;const left=isPressed('KeyA')||isPressed('ArrowLeft'),right=isPressed('KeyD')||isPressed('ArrowRight'),crouch=(isPressed('KeyS')||isPressed('ArrowDown'))&&p.grounded;p.vx=(Number(right)-Number(left))*(crouch?105:260);if(p.vx)p.face=Math.sign(p.vx);if(p.grounded)p.coyote=.1;else p.coyote=Math.max(0,p.coyote-dt);if(p.buffer>0&&p.coyote>0){p.vy=-580;p.grounded=false;p.coyote=0;p.buffer=0;tone(360,.09,'triangle');}moveActor(p,dt,platforms);p.x=clamp(p.x,0,LEVELS[level].length-p.w);if(p.y>H+100)damage(100);if(isPressed('KeyJ')&&p.shot<=0)fire();
 const cp=Math.floor(p.x/1100)*1100+90;if(cp>checkpoint&&cp<LEVELS[level].length-650){checkpoint=cp;toast('Checkpoint alcançado • granadas reabastecidas');p.ammo=Math.max(p.ammo,5);}
