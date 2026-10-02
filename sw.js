@@ -1,1 +1,17 @@
-const CACHE='impacto-rebelde-v7-overlay';const FILES=['./','./index.html','./style.css','./style.css?v=overlay7','./game.js','./game.js?v=mobile3','./engine.js','./icon.svg','./manifest.webmanifest'];self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())));self.addEventListener('activate',e=>e.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('impacto-rebelde-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim())));self.addEventListener('fetch',e=>{if(e.request.method!=='GET'||new URL(e.request.url).origin!==self.location.origin)return;e.respondWith(caches.match(e.request).then(hit=>hit||fetch(e.request).then(response=>{if(response.ok){const copy=response.clone();caches.open(CACHE).then(c=>c.put(e.request,copy));}return response;}).catch(()=>e.request.mode==='navigate'?caches.match('./index.html'):Response.error())));});
+const CACHE='impacto-rebelde-v8-actions';
+const FILES=['./','./index.html','./style.css','./style.css?v=actions8','./game.js','./game.js?v=actions8','./engine.js','./icon.svg','./manifest.webmanifest'];
+self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
+self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('impacto-rebelde-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
+self.addEventListener('fetch',event=>{
+ if(event.request.method!=='GET'||new URL(event.request.url).origin!==self.location.origin)return;
+ event.respondWith((async()=>{
+  const cache=await caches.open(CACHE);
+  try{
+   const response=await fetch(event.request);
+   if(response.ok){event.waitUntil(cache.put(event.request,response.clone()));return response;}
+   return await cache.match(event.request)||response;
+  }catch{
+   return await cache.match(event.request)||(event.request.mode==='navigate'?await cache.match('./index.html'):null)||Response.error();
+  }
+ })());
+});

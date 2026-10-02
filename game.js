@@ -30,18 +30,27 @@ function releaseTouchState(held){
  if(held.button&&! [...activePointers.values()].some(v=>v.button===held.button))held.button.classList.remove('pressed');
  if(held.code==='Space')releaseJump();
 }
+export function touchTargetAt(pad,x,y){
+ const bounds=pad.getBoundingClientRect?.();
+ if(bounds){
+  if(x<bounds.left-8||x>bounds.right+8||y<bounds.top-8||y>bounds.bottom+8)return null;
+  let nearest=null,distance=Infinity;
+  for(const candidate of pad.querySelectorAll('[data-key]')){
+   const r=candidate.getBoundingClientRect();
+   if(x>=r.left&&x<=r.right&&y>=r.top&&y<=r.bottom)return candidate;
+   const d=Math.hypot(x-(r.left+r.right)/2,y-(r.top+r.bottom)/2);
+   if(d<distance){distance=d;nearest=candidate;}
+  }
+  return nearest;
+ }
+ const hit=document.elementFromPoint?.(x,y),next=hit?.closest?.('[data-key]');return next&&pad.contains(next)?next:null;
+}
 export function bindTouchButton(button){
  const release=e=>{const held=activePointers.get(e.pointerId);if(!held||held.owner!==button)return;activePointers.delete(e.pointerId);releaseTouchState(held);};
  button.addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='play'||activePointers.has(e.pointerId)||(e.pointerType==='mouse'&&e.button!==0))return;const code=button.dataset.key;const first=!isPressed(code);activePointers.set(e.pointerId,{code,button,owner:button});touchKeys.add(code);button.classList.add('pressed');try{button.setPointerCapture(e.pointerId);}catch{}if(first)pressAction(code);});
  button.addEventListener('pointermove',e=>{
   const held=activePointers.get(e.pointerId);if(!held||held.owner!==button||!(button.closest?.('.movement-pad')||button.closest?.('.action-pad')))return;
-  e.preventDefault();const pad=button.closest('.movement-pad')||button.closest('.action-pad');const hit=document.elementFromPoint?.(e.clientX,e.clientY);let next=hit?.closest?.('[data-key]');
-  if(!next||!pad.contains(next)){
-   next=null;
-   if(hit&&pad.contains(hit)){
-    let distance=Infinity;for(const candidate of pad.querySelectorAll('[data-key]')){const r=candidate.getBoundingClientRect(),d=Math.hypot(e.clientX-r.left-r.width/2,e.clientY-r.top-r.height/2);if(d<distance){distance=d;next=candidate;}}
-   }
-  }
+  e.preventDefault();const pad=button.closest('.movement-pad')||button.closest('.action-pad');const next=touchTargetAt(pad,e.clientX,e.clientY);
   if(next===held.button)return;
   activePointers.delete(e.pointerId);releaseTouchState(held);
   const code=next?.dataset.key??null;activePointers.set(e.pointerId,{code,button:next,owner:button});
