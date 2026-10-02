@@ -55,3 +55,17 @@ body.mobile-session .game-shell:has(.overlay:not([hidden])) .touch-pad{opacity:.
 body.mobile-session .game-shell:has(.overlay:not([hidden])) .touch-pad button{pointer-events:none}
 @media(orientation:portrait){body.mobile-session .game-shell{padding:0}body.mobile-session .stage{width:min(100%,calc(100vw * 16/9))}}
 @media(max-height:340px) and (orientation:landscape){body.mobile-session .touch-pad button{width:54px;height:46px}body.mobile-session .touch-pad .fire-button{width:66px;height:58px}body.mobile-session .touch-pad{bottom:12px}body.mobile-session .touch-top{top:52px}}
+
+/* Edge-to-edge mobile play and translucent floating controls. */
+body.mobile-session .stage{width:100%;height:100%;aspect-ratio:auto;border:0;border-radius:0}
+body.mobile-session .stage canvas{width:100%;height:100%}
+body.mobile-session .touch-controls{inset:0;width:100%;height:100%}
+body.mobile-session .touch-pad{left:max(20px,env(safe-area-inset-left));right:max(20px,env(safe-area-inset-right));bottom:max(22px,env(safe-area-inset-bottom))}
+body.mobile-session .touch-pad button{background:linear-gradient(145deg,#234b65b8,#122c40a8);border:1px solid #c6eaff80;box-shadow:inset 0 1px 0 #ffffff24,0 5px 16px #0005;color:#f2faff;border-radius:19px;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);text-shadow:0 1px 4px #0009;transition:background .1s,box-shadow .1s}
+body.mobile-session .touch-pad small{color:#f0f7fc;font-weight:800;letter-spacing:.5px}
+body.mobile-session .touch-pad .fire-button{background:linear-gradient(145deg,#ffc971c9,#df913baa);border-color:#ffe1a0aa;color:#172330;box-shadow:inset 0 1px 0 #ffffff50,0 5px 18px #0005;text-shadow:none;border-radius:24px}
+body.mobile-session .fire-button small{color:#172330}
+body.mobile-session .touch-pad button.pressed{background:#9bdaeee6;color:#102431;border-color:#eafaff;box-shadow:0 0 14px #a7e4ff55,inset 0 2px 4px #17374b44}
+body.mobile-session .touch-pad .fire-button.pressed{background:#ffe1a3eb;color:#172330}
+body.mobile-session .touch-top button{background:#102839b0;border-color:#bddbed60;box-shadow:0 3px 12px #0004}
+@media(orientation:portrait){body.mobile-session .stage{width:100%;height:100%;aspect-ratio:auto}}
