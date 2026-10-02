@@ -1,0 +1,57 @@
+name: Build offline Android APK
+on:
+  push:
+    branches: [main]
+    paths: ['android/**', 'assets/**', '*.js', '*.html', '*.css', '*.webmanifest', 'icon.svg', '.github/workflows/android-apk.yml']
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: android-apk
+  cancel-in-progress: false
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Bundle all offline game resources
+        run: |
+          mkdir -p android/app/src/main/assets
+          cp index.html game.js engine.js style.css icon.svg manifest.webmanifest android/app/src/main/assets/
+          cp -r assets android/app/src/main/assets/
+          test -f android/app/src/main/assets/assets/backgrounds-v13.webp
+          test -f android/app/src/main/assets/assets/characters-v12.webp
+      - name: Build installable APK
+        run: gradle -p android assembleDebug --no-daemon
+      - name: Verify embedded game and signature
+        run: |
+          APK=android/app/build/outputs/apk/debug/app-debug.apk
+          unzip -l "$APK" | tee apk-contents.txt
+          for file in index.html game.js engine.js style.css assets/backgrounds-v13.webp assets/characters-v12.webp; do
+            unzip -l "$APK" | grep -F "assets/$file"
+          done
+          SIGNER=$(ls "$ANDROID_HOME"/build-tools/*/apksigner | sort -V | tail -n1)
+          "$SIGNER" verify --verbose "$APK"
+          cp "$APK" Impacto-Rebelde.apk
+          sha256sum Impacto-Rebelde.apk > Impacto-Rebelde.apk.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Impacto-Rebelde-APK
+          path: |
+            Impacto-Rebelde.apk
+            Impacto-Rebelde.apk.sha256
+      - name: Publish downloadable APK
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view android-offline-v1 >/dev/null 2>&1; then
+            gh release create android-offline-v1 --title 'Impacto Rebelde — Android offline' --notes 'APK para jogar e compartilhar offline. Inclui nove fases, cinco cenários e controles por toque. Android 6 ou superior. Build de teste assinado; não é uma publicação na Play Store. Atualizações podem exigir reinstalação e apagar o progresso local.'
+          fi
+          gh release upload android-offline-v1 Impacto-Rebelde.apk Impacto-Rebelde.apk.sha256 --clobber

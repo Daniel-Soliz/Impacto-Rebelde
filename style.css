@@ -77,3 +77,5 @@ body.mobile-session .game-shell .stage canvas{position:absolute;inset:0;display:
 body.mobile-session .game-shell{overflow:hidden}
 body.mobile-session .game-shell .touch-controls{z-index:2}
 body.mobile-session .game-shell .overlay{z-index:1}
+
+.mission-picker{display:grid;gap:7px;margin-top:18px;font:10px monospace;color:#bccbd5}.mission-picker select{max-width:100%;padding:10px;background:#142a38;color:#e9eef1;border:1px solid #667b89;border-radius:5px}.download-panel{display:flex;align-items:center;gap:24px;justify-content:space-between;padding:20px;margin-top:24px;border:1px solid #526575;border-radius:8px;background:#142632}.download-panel strong{color:#ffc579;font-size:13px}.download-panel p{max-width:650px;font-size:13px;line-height:1.6;color:#bdccd5}.download-panel a{flex-shrink:0;background:#ffbe66;color:#152432;padding:14px 18px;border-radius:5px;font-weight:bold;font-size:12px;text-decoration:none}.download-panel[hidden]{display:none}@media(max-width:600px){.download-panel{align-items:stretch;flex-direction:column;gap:10px}.download-panel a{text-align:center}}
