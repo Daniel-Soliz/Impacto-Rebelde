@@ -1,6 +1,6 @@
 # Impacto Rebelde
 
-Jogo original de ação lateral para **computador**, inspirado no gênero run-and-gun. Arte procedural em pixel art e efeitos sonoros sintetizados, sem recursos de terceiros. Campanha solo com nove missões, nove chefões, resgate de civis, fuzil, metralhadora, escopeta, granadas, checkpoints, pausa e final.
+Jogo original de ação lateral para **computador e celular**, inspirado no gênero run-and-gun. Arte procedural em pixel art e efeitos sonoros sintetizados, sem recursos de terceiros. Campanha solo com nove missões, nove chefões, resgate de civis, fuzil, metralhadora, escopeta, granadas, checkpoints, pausa e final.
 
 ## Jogar e publicar
 
@@ -38,3 +38,9 @@ Depois do primeiro acesso completo em HTTPS ou localhost, o service worker armaz
 - `style.css`, `index.html`: interface e menus.
 
 Criado para Daniel Soliz. Personagens e cenários originais; não utiliza assets de Metal Slug. A versão 2 inclui personagens com armaduras, pernas articuladas, armas sombreadas e três classes de soldados; nove conjuntos de plataformas e cenários; minas, gelo, fio, chamas e energia com aviso; chefões com rajadas crescentes, tiros rasteiros e projéteis em arco. Mapas novos: Deserto de Vidro, Porto da Tempestade e Cidade Suspensa.
+
+## Jogar no celular
+
+Controles de toque aparecem automaticamente em dispositivos com ponteiro de toque. O botão CONTROLES permite alternar manualmente entre toque e teclado. Use as setas para andar, mirar acima e agachar; PULAR, ATIRAR e GRANADA executam as ações. Segure ATIRAR para disparo contínuo e combine os botões com vários dedos. PAUSA abre a tela de retomada.
+
+O layout funciona em pé e deitado; em paisagem, a área do jogo e os controles cabem na altura disponível. Tela cheia inclui os controles quando o navegador suporta Fullscreen API. Em navegadores sem suporte, use o modo paisagem. Girar ou sair da página pausa o jogo e libera comandos para evitar movimento preso. Atualização de cache v3-mobile mantém os controles disponíveis offline.
