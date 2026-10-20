@@ -213,6 +213,21 @@ if(boss.active&&!boss.dead){
  }
  if(overlap(p,boss))damage(25);
 }
+if([0,1,3,5,6,7].includes(level)&&time>nextFlyover&&!aircraft.length&&p.x<LEVELS[level].length-500){
+ const dir=Math.random()<.5?1:-1;
+ aircraft.push({x:dir===1?camera-120:camera+W+120,y:105+Math.random()*70,dir,shot:.7,speed:270+level*16,life:6.4});
+ nextFlyover=time+rand(18,30)/runVariation;toast('ALERTA AÉREO • Prepare-se!');
+}
+for(const plane of aircraft){
+ plane.x+=plane.dir*plane.speed*dt;plane.life-=dt;plane.shot-=dt;
+ if(plane.shot<=0&&Math.abs(plane.x-p.x)<750){
+  const dx=p.x+14-plane.x,dy=p.y+20-plane.y,dist=Math.max(1,Math.hypot(dx,dy));
+  const speed=(runDifficulty==='caos'?400:runDifficulty==='veterano'?360:320);
+  shots.push({x:plane.x,y:plane.y+18,vx:dx/dist*speed,vy:dy/dist*speed,life:4,friendly:false});
+  plane.shot=rand(.48,.88);
+ }
+}
+aircraft=aircraft.filter(plane=>plane.life>0);
 for(const s of shots){const x=s.x,y=s.y;s.x+=s.vx*dt;if(s.gravity)s.vy+=s.gravity*dt;s.y+=s.vy*dt;s.life-=dt;if(s.friendly){for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&segmentHit(x,y,s.x,s.y,e)){hitEnemy(e,s.power);s.life=0;break;}}else{const r=crouch?{x:p.x,y:p.y+22,w:p.w,h:26}:p;if(segmentHit(x,y,s.x,s.y,r)){damage(12);impactFX(s.x,s.y,'#ff8c6d',5);s.life=0;}}if(s.y>GROUND){if(s.life>0&&s.friendly)impactFX(s.x,GROUND,'#c6ad80',3);s.life=0;}}
 shots=shots.filter(s=>s.life>0&&Math.abs(s.x-p.x)<1200&&s.y>-200);
 for(const g of grenades){moveActor(g,dt,platforms);if(g.grounded)g.vx*=.94;g.life-=dt;if(g.life<=0){burst(g.x,g.y,'#ffbc58',45);shake=9;tone(60,.3,'sawtooth',.05);for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&Math.hypot(e.x+e.w/2-g.x,e.y+e.h/2-g.y)<180)hitEnemy(e,26);}}grenades=grenades.filter(g=>g.life>0);
