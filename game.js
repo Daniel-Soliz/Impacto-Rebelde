@@ -1,6 +1,6 @@
 import{W,H,GROUND,LEVELS,overlap,layout,moveActor,segmentHit,makePlayer,makeEnemies,makeBoss,loadSave,hazards,hazardActive,heroById}from'./engine.js';
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),overlay=document.querySelector('#overlay'),primary=document.querySelector('#primary'),secondary=document.querySelector('#secondary');
-ctx.imageSmoothingEnabled=false;const keys=new Set(),touchKeys=new Set();const isPressed=code=>keys.has(code)||touchKeys.has(code);let mode='menu',level=0,p=makePlayer(),platforms=[],enemies=[],boss,shots=[],grenades=[],particles=[],muzzles=[],casings=[],hits=[],pickups=[],hostages=[],traps=[],camera=0,time=0,score=0,lives=3,checkpoint=90,banner=0,shake=0,audioOn=true,audioContext,save=loadSave(localStorage),toastTimer;
+ctx.imageSmoothingEnabled=false;const keys=new Set(),touchKeys=new Set();const isPressed=code=>keys.has(code)||touchKeys.has(code);let mode='menu',level=0,p=makePlayer(),platforms=[],enemies=[],boss,shots=[],grenades=[],particles=[],muzzles=[],casings=[],hits=[],pickups=[],hostages=[],traps=[],camera=0,time=0,score=0,lives=3,checkpoint=90,banner=0,shake=0,runDifficulty='normal',runVariation=1,aircraft=[],nextFlyover=15,explosions=[],audioOn=true,audioContext,save=loadSave(localStorage),toastTimer;
 const $=s=>document.querySelector(s),rand=(a,b)=>a+Math.random()*(b-a),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 let selectedHero='cobalto',guide=null;
 try{selectedHero=heroById(localStorage.getItem('impacto-rebelde-hero-v1')).id;}catch{}
@@ -42,8 +42,17 @@ function tone(freq,duration=.07,type='square',volume=.025){if(!audioOn)return;tr
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2800);}
 function persist(won=false){try{localStorage.setItem('impacto-rebelde-v1',JSON.stringify({level,score,won}));save={level,score,won};}catch{toast('Armazenamento indisponível: progresso nesta sessão.');}}
 function screen(title,description,label,action,eyebrow='OPERAÇÃO AURORA'){clearInput();overlay.hidden=false;$('#title').innerHTML=title;$('#description').textContent=description;$('#eyebrow').textContent=eyebrow;primary.textContent=label;primary.onclick=action;secondary.hidden=true;const picker=$('#hero-picker');if(picker)picker.hidden=mode!=='menu';const training=$('#training-guide');if(training)training.hidden=true;$('#hint').textContent=touchEnabled?'Use os botões na tela · Combine movimento, pulo e tiro.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
-function start(i=0,continuing=false){level=i;score=continuing?(save?.score||0):0;lives=3;loadLevel();}
-function loadLevel(){p=makePlayer(selectedHero);platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);shots=[];grenades=[];particles=[];muzzles=[];casings=[];hits=[];pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();beginGuide();enterMobileView();}
+function start(i=0,continuing=false){
+ runDifficulty=$('#difficulty-select')?.value||'normal';if(!['normal','veterano','caos'].includes(runDifficulty))runDifficulty='normal';
+ runVariation=.88+Math.random()*.28;
+ level=i;score=continuing?(save?.score||0):0;lives=3;loadLevel();
+}
+function loadLevel(){
+ p=makePlayer(selectedHero);platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);
+ const scale=(runDifficulty==='caos'?1.55:runDifficulty==='veterano'?1.28:1.08)*runVariation;
+ for(const e of enemies){e.max=Math.ceil(e.hp*scale);e.hp=e.max;e.cool*=Math.max(.62,1.07/scale);e.brain=Math.random()*1.2;e.stance=['rush','flank','hold','retreat'][Math.floor(Math.random()*4)];e.stride=0;}
+ boss.max=Math.ceil(boss.max*scale);boss.hp=boss.max;boss.cool*=Math.max(.62,1.05/scale);
+ shots=[];grenades=[];particles=[];muzzles=[];casings=[];hits=[];explosions=[];aircraft=[];nextFlyover=11+Math.random()*7;pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();beginGuide();enterMobileView();}
 function burst(x,y,color,count=15){for(let i=0;i<count;i++)particles.push({x,y,vx:rand(-200,200),vy:rand(-220,100),life:rand(.2,.7),color,size:rand(2,6)});}
 function damage(amount){if(p.inv>0||mode!=='play')return;p.hp-=amount;p.inv=1.15;shake=8;burst(p.x+12,p.y+20,'#ffa06a',8);tone(100,.14,'sawtooth');if(p.hp<=0){lives--;if(lives>0){p=makePlayer(selectedHero);p.x=checkpoint;p.inv=2.5;shots=shots.filter(s=>s.friendly);toast('Reagrupando no checkpoint.');}else{mode='over';screen('MISSÃO<br><em>INTERROMPIDA</em>','A resistência ainda precisa de você. Tente novamente a missão atual.','TENTAR NOVAMENTE',()=>{lives=3;loadLevel();});}}}
 function hitEnemy(e,amount){if(e.dead)return;e.hp-=amount;e.flash=.09;impactFX(e.x+e.w*.5,e.y+e.h*.45,p.accent,9);if(e.hp<=0){e.dead=true;score+=e===boss?1500:100;burst(e.x+e.w/2,e.y+e.h/2,'#ffb75b',e===boss?65:18);tone(70,.25,'sawtooth',.05);if(e===boss){shake=16;shots=shots.filter(s=>s.friendly);pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});toast('Chefão neutralizado. Avance até o ponto de extração!');}else if(Math.random()<.12)pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});}}
@@ -60,7 +69,12 @@ function fire(){
  casings.push({x:p.x+16,y:p.y+15,vx:-p.face*rand(55,95),vy:rand(-205,-130),life:.48});
  tone(p.weapon===2?135:220,.045,'square',.026);burst(x,y,'#ffe6aa',3);progressGuide('fire');
 }
-function throwGrenade(){if(p.ammo<=0||p.grenade>0)return;p.ammo--;p.grenade=.55;grenades.push({x:p.x+14,y:p.y+12,w:8,h:8,vx:p.face*370,vy:-470,life:1.25,grounded:false});tone(500,.05);}
+function throwGrenade(){
+ if(p.ammo<=0||p.grenade>0)return;
+ p.ammo--;p.grenade=.58;
+ grenades.push({x:p.x+14,y:p.y+12,w:10,h:10,vx:p.face*385,vy:-535,life:1.65,bounces:0,grounded:false,trail:[]});
+ tone(480,.06,'triangle');
+}
 function complete(){score+=500+lives*100;mode=level===LEVELS.length-1?'win':'between';persist(level===LEVELS.length-1);if(level===LEVELS.length-1)screen('AURORA<br><em>LIBERTADA</em>',`Você encerrou a ocupação e devolveu a energia à cidade. Pontuação final: ${score.toLocaleString('pt-BR')}. Obrigado por jogar Impacto Rebelde!`,'JOGAR NOVAMENTE',()=>start(),'CAMPANHA CONCLUÍDA • DANIEL SOLIZ');else screen('MISSÃO<br><em>CONCLUÍDA</em>',`Próximo destino: ${LEVELS[level+1].name}. ${LEVELS[level+1].subtitle}. Pontuação: ${score}.`,'PRÓXIMA MISSÃO',()=>{level++;lives=Math.min(5,lives+1);loadLevel();});}
 function pause(){if(mode==='play'){mode='pause';screen('OPERAÇÃO<br><em>EM PAUSA</em>','Respire. O campo de batalha espera por você.','VOLTAR AO JOGO',resume);}else if(mode==='pause')resume();}
 function resume(){mode='play';overlay.hidden=true;clearInput();canvas.focus();}
