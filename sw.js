@@ -1,5 +1,5 @@
-const CACHE='impacto-rebelde-v15-offline';
-const FILES=['./','./index.html','./style.css','./style.css?v=offline15','./game.js','./game.js?v=offline15','./engine.js','./assets/characters-v12.webp','./assets/backgrounds-v13.webp','./icon.svg','./manifest.webmanifest'];
+const CACHE='impacto-rebelde-v17-offline';
+const FILES=['./','./index.html','./style.css','./style.css?v=offline17','./game.js','./game.js?v=offline17','./engine.js','./assets/characters-v12.webp','./assets/backgrounds-v13.webp','./icon.svg','./manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(FILES)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('impacto-rebelde-')&&key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 self.addEventListener('fetch',event=>{
