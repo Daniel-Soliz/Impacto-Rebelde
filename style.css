@@ -120,3 +120,4 @@ body.mobile-session .game-shell .overlay{z-index:1}
 #primary{position:relative;z-index:6;min-height:47px}
 @media(max-width:760px){.overlay .panel{padding:10px}.overlay .panel h1{font-size:clamp(26px,6vw,45px)}.hero-picker{margin:5px 0}.hero-option{min-height:58px}.difficulty-select{margin:5px 0}.difficulty-select select{padding:6px;font-size:10px}.panel .primary{min-height:36px}
 }
+.overlay .panel{max-width:670px}.overlay .panel .hero-options{margin-bottom:7px}.overlay .panel .difficulty-select{max-width:480px}
