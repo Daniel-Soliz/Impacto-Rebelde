@@ -1,4 +1,4 @@
-import{test}from'node:test';import assert from'node:assert/strict';import{LEVELS,layout,moveActor,makePlayer,makeBoss,makeEnemies,segmentHit,loadSave,GROUND,hazards,hazardActive}from'../engine.js';
+import{test}from'node:test';import assert from'node:assert/strict';import{LEVELS,layout,moveActor,makePlayer,makeBoss,makeEnemies,segmentHit,loadSave,GROUND,hazards,hazardActive,HEROES,heroById}from'../engine.js';
 test('nine campaigns have continuous ground, enemies and bosses',()=>{assert.equal(LEVELS.length,9);for(let i=0;i<LEVELS.length;i++){const ps=layout(i);assert.equal(ps[0].w,LEVELS[i].length);assert.ok(makeEnemies(i).length>10);const b=makeBoss(i);assert.ok(b.x+b.w<LEVELS[i].length-100);assert.ok(b.hp>0);}});
 test('jump lands exactly on ground with no sinking at varied rates',()=>{for(const dt of[1/30,1/60,1/120]){const p=makePlayer();p.vy=-580;p.grounded=false;let min=p.y;for(let n=0;n<2/dt;n++){moveActor(p,dt,layout(0));min=Math.min(min,p.y);}assert.ok(min<GROUND-140);assert.equal(p.y,GROUND-p.h);assert.equal(p.vy,0);assert.equal(p.grounded,true);}});
 test('one-way platform can be crossed upward and catches downward sweep',()=>{const p={x:50,y:220,w:28,h:48,vx:0,vy:-500};moveActor(p,.05,[{x:0,y:240,w:200,h:15}]);assert.ok(p.y<220);assert.equal(p.grounded,false);p.y=100;p.vy=1400;moveActor(p,.1,[{x:0,y:240,w:200,h:15}]);assert.equal(p.y,192);assert.equal(p.grounded,true);});
@@ -8,3 +8,14 @@ test('corrupt and out-of-range saves are safely rejected',()=>{for(const raw of[
 test('nine maps have distinct platform geometry and reachable climbs',()=>{const signatures=new Set();for(let i=0;i<LEVELS.length;i++){const ps=layout(i).slice(1);signatures.add(JSON.stringify(ps.slice(0,5).map(p=>[p.x,p.y,p.w])));for(const p of ps){assert.ok(p.y>=GROUND-210);assert.ok(p.w>=80);assert.ok(p.x+p.w<LEVELS[i].length-600);}}assert.equal(signatures.size,LEVELS.length);});
 test('hazards give warning intervals and spare spawn and boss arena',()=>{assert.equal(hazards(0).length,0);for(let i=1;i<LEVELS.length;i++)for(const h of hazards(i)){assert.ok(h.x>850);assert.ok(h.x+h.w<LEVELS[i].length-750);assert.equal(hazardActive({...h,phase:0},h.period*.3),false);assert.equal(hazardActive({...h,phase:0},h.period*.8),true);assert.ok(h.w<80);}});
 test('enemy density, boss health and late-game roles increase',()=>{assert.ok(makeEnemies(8).length>makeEnemies(0).length);assert.ok(makeBoss(8).hp>makeBoss(0).hp);assert.ok(makeEnemies(4).some(e=>e.type==='heavy'));assert.ok(makeEnemies(4).some(e=>e.type==='sniper'));});
+
+test('hero roster has unique IDs, distinct stats and safe fallback',()=>{
+ assert.equal(HEROES.length,3);
+ assert.equal(new Set(HEROES.map(h=>h.id)).size,3);
+ const base=makePlayer(),scout=makePlayer('vespa'),tank=makePlayer('tita');
+ assert.equal(base.hp,100);assert.equal(base.speed,260);
+ assert.ok(scout.speed>base.speed&&scout.hp<base.hp);
+ assert.ok(tank.hp>base.hp&&tank.speed<base.speed);
+ assert.equal(makePlayer('invalid').heroId,'cobalto');
+ assert.equal(heroById('vespa').sprite,4);
+});
