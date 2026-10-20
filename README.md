@@ -54,3 +54,14 @@ O projeto Android está em `android/`. O workflow `android-apk.yml` empacota HTM
 O arquivo `Impacto-Rebelde.apk` é publicado no release `android-offline-v1`. Pode ser baixado no site e enviado como arquivo para outra pessoa. O destinatário instala o APK no próprio Android; não precisa carregar o site antes. É um build de teste assinado, para instalação direta, sem publicação na Play Store. Como a assinatura de teste pode mudar entre builds, uma atualização pode exigir desinstalação e apagar o progresso. Uma distribuição com atualizações contínuas exige uma chave de assinatura de produção guardada em segurança.
 
 No navegador, abra o site com internet uma vez e espere `PRONTO PARA JOGAR OFFLINE`. O cache guarda código e imagens das nove fases. Se os dados do navegador forem limpos, é necessário carregar novamente com internet. Navegação offline usa o mesmo endereço salvo; um navegador diferente não compartilha esse cache.
+
+
+## Heróis e combate — nova atualização
+
+Na tela inicial você escolhe entre **Cobalto** (equilibrado, 100 HP), **Vespa** (rápido, 85 HP) e **Titã** (resistente, 140 HP). Cada herói utiliza os sprites originais do jogo e possui velocidade de movimento, vida, intervalo dos disparos, dano e velocidade dos projéteis próprios. A escolha é lembrada no navegador.
+
+O combate agora inclui **rastros de tiros, clarão do cano, cápsulas e faíscas de impacto**. Eles representam eventos reais do motor do jogo e não afetam a geometria dos cenários.
+
+Na primeira missão, um pequeno tutorial não bloqueante indica como andar, pular e atirar. Ele desaparece ao completar os passos, após 20 segundos ou ao ser fechado.
+
+**Nota sobre Android:** estas melhorias são entregues na versão web. O APK anteriormente publicado continua com os arquivos antigos até que um novo instalador seja compilado e publicado.
