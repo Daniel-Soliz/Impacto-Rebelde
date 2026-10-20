@@ -1,0 +1,39 @@
+name: Importar cenários enviados
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/biomas-combate-bosses-v3]
+    paths: [.github/workflows/importar-cenarios.yml]
+permissions:
+  contents: write
+jobs:
+  importar-cenarios:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/biomas-combate-bosses-v3
+          persist-credentials: true
+      - name: Baixar cinco imagens originais fornecidas pelo autor
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p assets/biomes
+          curl --fail --location --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JcQfxW1tGShkWXbUXZE50F6Dyk/2bb10d2c-6bde-4ab9-b7d1-8c329988959b.jpg' -o assets/biomes/desert.jpg
+          curl --fail --location --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JcQfxW1tGShkWXbUXZE50F6Dyk/638f98d6-74fa-4a3e-a47d-f04d067e8f9a.jpg' -o assets/biomes/forest-pixel.jpg
+          curl --fail --location --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JcQfxW1tGShkWXbUXZE50F6Dyk/0e8b3c3c-28e9-4b20-b90f-4294f3b93043.jpg' -o assets/biomes/forest-paint.jpg
+          curl --fail --location --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JcQfxW1tGShkWXbUXZE50F6Dyk/e76f68cc-457d-4a67-9198-210395541ac3.jpg' -o assets/biomes/plains.jpg
+          curl --fail --location --silent --show-error 'https://d2ol7oe51mr4n9.cloudfront.net/user_3JcQfxW1tGShkWXbUXZE50F6Dyk/0b7f2f6a-d915-4c91-923a-16633447b38d.jpg' -o assets/biomes/crypt-sheet.jpg
+          file assets/biomes/*.jpg
+          test "$(find assets/biomes -name '*.jpg' | wc -l)" -eq 5
+      - name: Gravar imagens na própria pasta do jogo
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add assets/biomes
+          if ! git diff --cached --quiet; then
+            git commit -m 'assets: incorpora cenários originais enviados pelo autor'
+            git push origin HEAD:feature/biomas-combate-bosses-v3
+          fi
