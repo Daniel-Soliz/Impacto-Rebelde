@@ -395,7 +395,15 @@ const up=friendly&&(isPressed('KeyW')||isPressed('ArrowUp'));if(up){rect(x+12,yy
 rect(x+21,yy+8,2,5,'#ae795a');rect(x+10,yy+11,3,2,'#cf9774');rect(x+8,yy+1,13,1,'#cad3b766');rect(x+8,yy+16,2,9,'#ffffff35');rect(x+20,yy+16,3,10,'#00000035');rect(x+12,yy+17,6,5,'#253c3f');rect(x+13,yy+18,4,1,'#9bafa1');rect(x+9,yy+23,3,3,'#342e29');rect(x+18,yy+23,3,3,'#342e29');if(!crouch){rect(x+6,yy+29,1,10,'#ffffff28');rect(x+20,yy+29,1,10,'#ffffff28');rect(x+4,yy+37+step,7,2,'#293a3b');rect(x+18,yy+37-step,7,2,'#293a3b');}
 if(role==='heavy'){rect(x,yy+14,5,14,'#b8b9ad');rect(x+23,yy+14,6,14,'#b8b9ad');rect(x+6,yy+12,18,4,'#d3d4bf');}
 }
-function drawBoss(){if(boss.dead)return;const b=boss,x=b.x,y=b.y;const colors=['#8e9873','#78895b','#987a69','#92b6bd','#ae7052','#c7a063','#738fa6','#a5a0bb','#688eaa'];rect(x-4,y+b.h-27,b.w+8,27,'#17252e');for(let n=0;n<6;n++){ctx.fillStyle='#687580';ctx.beginPath();ctx.arc(x+10+n*25,y+b.h-13,10,0,Math.PI*2);ctx.fill();rect(x+6+n*25,y+b.h-16,8,5,'#1c2c34');}rect(x+6,y+36,b.w-12,b.h-60,b.flash>0?'#fff0c3':colors[level]);rect(x+26,y+16,95,35,colors[level]);rect(x-40,y+39,75,14,'#293c48');rect(x-45,y+35,12,22,'#7e9094');rect(x+43,y+4,51,18,'#293d48');rect(x+49,y+8,35,6,level===5?'#78eef0':'#ffca73');rect(x+15,y+59,b.w-32,5,'#0003');rect(x+60,y+65,25,20,'#364652');// Mission-specific boss attachments and silhouettes.
+function drawFlyingBoss(){
+ const b=boss,x=b.x,y=b.y,c=b.family==='reactor'?'#6bd5d8':'#98b6c3';
+ rect(x-50,y+35,242,22,'#203242');rect(x-25,y+27,195,12,c);
+ rect(x+35,y+13,85,52,b.flash>0?'#fff0c3':c);
+ rect(x+60,y+19,45,19,'#244c66');rect(x+70,y+24,23,11,'#7ce5f1');
+ for(const px of [x+3,x+131]){rect(px,y+68,23,7,'#ffcb79');rect(px+4,y+75,15,9+Math.abs(Math.sin(time*8))*8,'#f58b5b');}
+ if(b.family==='drone'){rect(x+60,y-19,13,35,c);rect(x+20,y-22,106,6,'#9db2bc');}
+}
+function drawBoss(){if(boss.dead)return;if(['gunship','drone','reactor'].includes(boss.family)){drawFlyingBoss();return;}const b=boss,x=b.x,y=b.y;const colors=['#8e9873','#78895b','#987a69','#92b6bd','#ae7052','#c7a063','#738fa6','#a5a0bb','#688eaa'];rect(x-4,y+b.h-27,b.w+8,27,'#17252e');for(let n=0;n<6;n++){ctx.fillStyle='#687580';ctx.beginPath();ctx.arc(x+10+n*25,y+b.h-13,10,0,Math.PI*2);ctx.fill();rect(x+6+n*25,y+b.h-16,8,5,'#1c2c34');}rect(x+6,y+36,b.w-12,b.h-60,b.flash>0?'#fff0c3':colors[level]);rect(x+26,y+16,95,35,colors[level]);rect(x-40,y+39,75,14,'#293c48');rect(x-45,y+35,12,22,'#7e9094');rect(x+43,y+4,51,18,'#293d48');rect(x+49,y+8,35,6,level===5?'#78eef0':'#ffca73');rect(x+15,y+59,b.w-32,5,'#0003');rect(x+60,y+65,25,20,'#364652');// Mission-specific boss attachments and silhouettes.
 if(level===1||level===5){for(let n=0;n<3;n++){const dx=Math.sin(time*3+n)*8;rect(x-16+n*65,y+65,12,40,'#344842');rect(x-25+n*65+dx,y+100,32,12,colors[level]);}rect(x+110,y+3,13,34,'#253a43');}
 if(level===3||level===7){rect(x-18,y+20,185,8,'#94b6c7');rect(x+32,y-20,80,20,colors[level]);rect(x+68,y-36,7,16,'#243c4c');rect(x+9,y-39,120,4,'#aac5cb');}
 if(level===4){rect(x+112,y-40,21,75,'#675753');rect(x+116,y-38,7,63,'#dd9b63');rect(x+25,y+43,90,8,'#edaa60');}
