@@ -187,7 +187,32 @@ for(const e of enemies){
  }
  if(overlap(p,e))damage(15);
 }
-boss.active ||= p.x>boss.x-650;if(boss.active&&!boss.dead){boss.phase+=dt;boss.flash=Math.max(0,(boss.flash||0)-dt);boss.y=GROUND-boss.h+(['gunship','drone','reactor'].includes(boss.family)?-20+Math.sin(boss.phase*1.65)*82:boss.family==='spider'?Math.sin(boss.phase*2)*12:0);boss.cool-=dt;if(boss.cool<=0){const dx=p.x+14-(boss.x+20),dy=p.y+20-(boss.y+50),a=Math.atan2(dy,dx),count=boss.hp<boss.max*.5?Math.min(7,4+Math.floor(level/2)):3+Math.floor(level/4);for(let n=0;n<count;n++){const t=a+(n-(count-1)/2)*.16;shots.push({x:boss.x+20,y:boss.y+50,vx:Math.cos(t)*(220+level*12),vy:Math.sin(t)*(220+level*12),life:5,friendly:false});}boss.cool=Math.max(.7,1.7-level*.115);if(level>=2){shots.push({x:boss.x,y:GROUND-9,vx:-185-level*15,vy:0,life:5,friendly:false});}if(level>=5&&boss.hp<boss.max*.5){shots.push({x:boss.x+75,y:boss.y,vx:-160-level*8,vy:-280,gravity:380,life:4,friendly:false});}tone(90,.1,'triangle',.015);}if(overlap(p,boss))damage(25);}
+boss.active ||= p.x>boss.x-650;
+if(boss.active&&!boss.dead){
+ boss.phase+=dt;boss.flash=Math.max(0,(boss.flash||0)-dt);
+ const flying=['gunship','drone','reactor'].includes(boss.family);
+ boss.y=GROUND-boss.h+(flying?-18+Math.sin(boss.phase*1.55)*82:boss.family==='spider'?Math.sin(boss.phase*2.2)*12:0);
+ boss.cool-=dt;
+ if(boss.cool<=0){
+  const dx=p.x+14-(boss.x+20),dy=p.y+20-(boss.y+50),a=Math.atan2(dy,dx);
+  const rage=boss.hp<boss.max*.5;
+  const family=boss.family,count=family==='reactor'?7:family==='drone'||family==='gunship'?5:rage?5:3;
+  const spread=family==='spider'?.24:family==='reactor'?.20:.16;
+  const speed=(family==='drone'?285:225)+level*12;
+  for(let n=0;n<count;n++){
+   const angle=a+(n-(count-1)/2)*spread;
+   shots.push({x:boss.x+20,y:boss.y+50,vx:Math.cos(angle)*speed,vy:Math.sin(angle)*speed,life:5,friendly:false});
+  }
+  if(['walker','forge','scorpion','carrier','reactor'].includes(family))
+   shots.push({x:boss.x,y:GROUND-9,vx:-185-level*15,vy:0,life:5,friendly:false});
+  if(['gunship','drone','carrier'].includes(family))
+   shots.push({x:boss.x+75,y:boss.y,vx:-160-level*8,vy:-280,gravity:380,life:4,friendly:false});
+  boss.attack++;
+  boss.cool=Math.max(.62,(family==='gunship'||family==='reactor'?1.12:1.7)-level*.10)/(rage?1.25:1);
+  tone(90,.1,'triangle',.015);
+ }
+ if(overlap(p,boss))damage(25);
+}
 for(const s of shots){const x=s.x,y=s.y;s.x+=s.vx*dt;if(s.gravity)s.vy+=s.gravity*dt;s.y+=s.vy*dt;s.life-=dt;if(s.friendly){for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&segmentHit(x,y,s.x,s.y,e)){hitEnemy(e,s.power);s.life=0;break;}}else{const r=crouch?{x:p.x,y:p.y+22,w:p.w,h:26}:p;if(segmentHit(x,y,s.x,s.y,r)){damage(12);impactFX(s.x,s.y,'#ff8c6d',5);s.life=0;}}if(s.y>GROUND){if(s.life>0&&s.friendly)impactFX(s.x,GROUND,'#c6ad80',3);s.life=0;}}
 shots=shots.filter(s=>s.life>0&&Math.abs(s.x-p.x)<1200&&s.y>-200);
 for(const g of grenades){moveActor(g,dt,platforms);if(g.grounded)g.vx*=.94;g.life-=dt;if(g.life<=0){burst(g.x,g.y,'#ffbc58',45);shake=9;tone(60,.3,'sawtooth',.05);for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&Math.hypot(e.x+e.w/2-g.x,e.y+e.h/2-g.y)<180)hitEnemy(e,26);}}grenades=grenades.filter(g=>g.life>0);
