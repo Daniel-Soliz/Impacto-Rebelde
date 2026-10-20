@@ -268,7 +268,22 @@ if(sceneryAtlas)sceneryAtlas.src='./assets/backgrounds-v13.webp';
 const SCENERY_ROWS=[0,361,677,1002,1310,1672];
 const MISSION_SCENERY=[1,4,2,2,3,0,1,2,0];
 const SCENERY_PALETTES=[['#302148','#a782e5'],['#33394b','#f2b275'],['#202947','#889bd8'],['#372825','#fbb06b'],['#472351','#d58cdd']];
-function paintedBackground(){
+const BIOMES=[null,['forest-pixel.jpg'],['crypt-sheet.jpg',0],['forest-paint.jpg'],['crypt-sheet.jpg',660],['desert.jpg'],['plains.jpg'],['crypt-sheet.jpg',330],['crypt-sheet.jpg',980]];
+const biomeImages={};
+for(const item of BIOMES){if(!item||biomeImages[item[0]])continue;const img=new Image();img.src='./assets/biomes/'+item[0];biomeImages[item[0]]=img;}
+function drawBiome(){
+ const item=BIOMES[level];if(!item)return false;
+ const img=biomeImages[item[0]];if(!img?.complete||!img.naturalWidth)return false;
+ ctx.save();ctx.imageSmoothingEnabled=item[0]!=='forest-paint.jpg';
+ const offset=Math.sin(camera*.0013)*15;
+ if(item.length>1)ctx.drawImage(img,0,item[1],736,315,-20+offset,-7,1000,465);
+ else ctx.drawImage(img,-20+offset,-7,1000,465);
+ ctx.restore();
+ rect(0,GROUND,W,H-GROUND,'#354956');rect(0,GROUND,W,6,'#a0b2a0');
+ for(let n=-1;n<34;n++)rect(n*31-camera%31,GROUND+9+(n*13+50)%67,14,2,'#00000028');
+ return true;
+}
+function paintedBackground(){if(drawBiome())return true;
  if(!sceneryAtlas?.complete||!sceneryAtlas.naturalWidth)return false;
  const theme=MISSION_SCENERY[level],sy=SCENERY_ROWS[theme],sh=SCENERY_ROWS[theme+1]-sy;
  const tileWidth=sceneryAtlas.naturalWidth*GROUND/sh,offset=camera*.16;
