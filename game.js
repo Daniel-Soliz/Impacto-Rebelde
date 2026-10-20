@@ -1,24 +1,72 @@
-import{W,H,GROUND,LEVELS,overlap,layout,moveActor,segmentHit,makePlayer,makeEnemies,makeBoss,loadSave,hazards,hazardActive}from'./engine.js';
+import{W,H,GROUND,LEVELS,overlap,layout,moveActor,segmentHit,makePlayer,makeEnemies,makeBoss,loadSave,hazards,hazardActive,heroById}from'./engine.js';
 const canvas=document.querySelector('#game'),ctx=canvas.getContext('2d'),overlay=document.querySelector('#overlay'),primary=document.querySelector('#primary'),secondary=document.querySelector('#secondary');
-ctx.imageSmoothingEnabled=false;const keys=new Set(),touchKeys=new Set();const isPressed=code=>keys.has(code)||touchKeys.has(code);let mode='menu',level=0,p=makePlayer(),platforms=[],enemies=[],boss,shots=[],grenades=[],particles=[],pickups=[],hostages=[],traps=[],camera=0,time=0,score=0,lives=3,checkpoint=90,banner=0,shake=0,audioOn=true,audioContext,save=loadSave(localStorage),toastTimer;
+ctx.imageSmoothingEnabled=false;const keys=new Set(),touchKeys=new Set();const isPressed=code=>keys.has(code)||touchKeys.has(code);let mode='menu',level=0,p=makePlayer(),platforms=[],enemies=[],boss,shots=[],grenades=[],particles=[],muzzles=[],casings=[],hits=[],pickups=[],hostages=[],traps=[],camera=0,time=0,score=0,lives=3,checkpoint=90,banner=0,shake=0,audioOn=true,audioContext,save=loadSave(localStorage),toastTimer;
 const $=s=>document.querySelector(s),rand=(a,b)=>a+Math.random()*(b-a),clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+let selectedHero='cobalto',guide=null;
+try{selectedHero=heroById(localStorage.getItem('impacto-rebelde-hero-v1')).id;}catch{}
+function selectHero(id){
+ if(mode!=='menu')return;
+ selectedHero=heroById(id).id;
+ try{localStorage.setItem('impacto-rebelde-hero-v1',selectedHero);}catch{}
+ document.querySelectorAll?.('[data-hero]')?.forEach(btn=>{
+  const active=btn.dataset.hero===selectedHero;
+  btn.classList.toggle('selected',active);
+  btn.setAttribute('aria-pressed',String(active));
+ });
+}
+document.querySelectorAll?.('[data-hero]')?.forEach(btn=>{btn.onclick=()=>selectHero(btn.dataset.hero);});
+selectHero(selectedHero);
+function finishGuide(){
+ guide=null;
+ const box=$('#training-guide');if(box)box.hidden=true;
+ try{localStorage.setItem('impacto-rebelde-guide-v1','done');}catch{}
+}
+function updateGuideUi(){document.querySelectorAll?.('[data-lesson]')?.forEach(el=>el.classList.toggle('completed',!!guide?.[el.dataset.lesson]));}
+function beginGuide(){
+ const box=$('#training-guide');if(!box)return;
+ let done=false;try{done=localStorage.getItem('impacto-rebelde-guide-v1')==='done';}catch{}
+ guide=level===0&&!done?{move:false,jump:false,fire:false,elapsed:0}:null;
+ box.hidden=!guide;if(guide)updateGuideUi();
+}
+function progressGuide(task){
+ if(!guide||mode!=='play')return;
+ guide[task]=true;updateGuideUi();
+ if(guide.move&&guide.jump&&guide.fire){finishGuide();toast('Treinamento concluído! Boa missão.');}
+}
+const guideDismiss=$('#guide-dismiss');if(guideDismiss)guideDismiss.onclick=finishGuide;
+function impactFX(x,y,color='#ffd18a',count=9){
+ hits.push({x,y,color,life:.15,maxLife:.15});
+ for(let i=0;i<count;i++)particles.push({x,y,vx:rand(-260,260),vy:rand(-250,150),life:rand(.12,.34),color,size:rand(1.5,4)});
+}
 function tone(freq,duration=.07,type='square',volume=.025){if(!audioOn)return;try{audioContext??=new AudioContext();if(audioContext.state==='suspended')audioContext.resume();const o=audioContext.createOscillator(),g=audioContext.createGain();o.type=type;o.frequency.setValueAtTime(freq,audioContext.currentTime);o.frequency.exponentialRampToValueAtTime(Math.max(30,freq*.4),audioContext.currentTime+duration);g.gain.setValueAtTime(volume,audioContext.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+duration);o.connect(g);g.connect(audioContext.destination);o.start();o.stop(audioContext.currentTime+duration);}catch{}}
 function toast(text){$('#toast').textContent=text;$('#toast').classList.add('show');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('show'),2800);}
 function persist(won=false){try{localStorage.setItem('impacto-rebelde-v1',JSON.stringify({level,score,won}));save={level,score,won};}catch{toast('Armazenamento indisponível: progresso nesta sessão.');}}
-function screen(title,description,label,action,eyebrow='OPERAÇÃO AURORA'){clearInput();overlay.hidden=false;$('#title').innerHTML=title;$('#description').textContent=description;$('#eyebrow').textContent=eyebrow;primary.textContent=label;primary.onclick=action;secondary.hidden=true;$('#hint').textContent=touchEnabled?'Use os botões na tela · Combine movimento, pulo e tiro.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
+function screen(title,description,label,action,eyebrow='OPERAÇÃO AURORA'){clearInput();overlay.hidden=false;$('#title').innerHTML=title;$('#description').textContent=description;$('#eyebrow').textContent=eyebrow;primary.textContent=label;primary.onclick=action;secondary.hidden=true;const picker=$('#hero-picker');if(picker)picker.hidden=mode!=='menu';const training=$('#training-guide');if(training)training.hidden=true;$('#hint').textContent=touchEnabled?'Use os botões na tela · Combine movimento, pulo e tiro.':'A/D mover · Espaço pular · J atirar · K granada · Esc pausa';}
 function start(i=0,continuing=false){level=i;score=continuing?(save?.score||0):0;lives=3;loadLevel();}
-function loadLevel(){p=makePlayer();platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);shots=[];grenades=[];particles=[];pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();enterMobileView();}
+function loadLevel(){p=makePlayer(selectedHero);platforms=layout(level);enemies=makeEnemies(level);boss=makeBoss(level);shots=[];grenades=[];particles=[];muzzles=[];casings=[];hits=[];pickups=[];hostages=[];traps=hazards(level);checkpoint=90;camera=0;banner=4;time=0;for(let x=1050;x<LEVELS[level].length-650;x+=1050){hostages.push({x,y:GROUND-40,w:24,h:40,saved:false});pickups.push({x:x+200,y:GROUND-24,w:24,h:24,type:x%2100===0?'health':'weapon',used:false});}mode='play';overlay.hidden=true;clearInput();canvas.focus();persist();beginGuide();enterMobileView();}
 function burst(x,y,color,count=15){for(let i=0;i<count;i++)particles.push({x,y,vx:rand(-200,200),vy:rand(-220,100),life:rand(.2,.7),color,size:rand(2,6)});}
-function damage(amount){if(p.inv>0||mode!=='play')return;p.hp-=amount;p.inv=1.15;shake=8;burst(p.x+12,p.y+20,'#ffa06a',8);tone(100,.14,'sawtooth');if(p.hp<=0){lives--;if(lives>0){p=makePlayer();p.x=checkpoint;p.inv=2.5;shots=shots.filter(s=>s.friendly);toast('Reagrupando no checkpoint.');}else{mode='over';screen('MISSÃO<br><em>INTERROMPIDA</em>','A resistência ainda precisa de você. Tente novamente a missão atual.','TENTAR NOVAMENTE',()=>{lives=3;loadLevel();});}}}
-function hitEnemy(e,amount){if(e.dead)return;e.hp-=amount;e.flash=.09;if(e.hp<=0){e.dead=true;score+=e===boss?1500:100;burst(e.x+e.w/2,e.y+e.h/2,'#ffb75b',e===boss?65:18);tone(70,.25,'sawtooth',.05);if(e===boss){shake=16;shots=shots.filter(s=>s.friendly);pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});toast('Chefão neutralizado. Avance até o ponto de extração!');}else if(Math.random()<.12)pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});}}
-function fire(){const up=isPressed('KeyW')||isPressed('ArrowUp'),crouch=isPressed('KeyS')||isPressed('ArrowDown');const x=p.x+14+(up?0:p.face*20),y=p.y+(up?4:crouch&&p.grounded?34:19);for(const spread of p.weapon===2?[-.16,0,.16]:[0]){shots.push({x,y,vx:up?Math.sin(spread)*800:p.face*800,vy:up?-800:Math.sin(spread)*800,life:1.5,friendly:true,power:p.weapon===1?2:1});}p.shot=p.weapon===1?.09:p.weapon===2?.26:.16;tone(p.weapon===2?150:220,.045);burst(x,y,'#ffe59a',3);}
+function damage(amount){if(p.inv>0||mode!=='play')return;p.hp-=amount;p.inv=1.15;shake=8;burst(p.x+12,p.y+20,'#ffa06a',8);tone(100,.14,'sawtooth');if(p.hp<=0){lives--;if(lives>0){p=makePlayer(selectedHero);p.x=checkpoint;p.inv=2.5;shots=shots.filter(s=>s.friendly);toast('Reagrupando no checkpoint.');}else{mode='over';screen('MISSÃO<br><em>INTERROMPIDA</em>','A resistência ainda precisa de você. Tente novamente a missão atual.','TENTAR NOVAMENTE',()=>{lives=3;loadLevel();});}}}
+function hitEnemy(e,amount){if(e.dead)return;e.hp-=amount;e.flash=.09;impactFX(e.x+e.w*.5,e.y+e.h*.45,p.accent,9);if(e.hp<=0){e.dead=true;score+=e===boss?1500:100;burst(e.x+e.w/2,e.y+e.h/2,'#ffb75b',e===boss?65:18);tone(70,.25,'sawtooth',.05);if(e===boss){shake=16;shots=shots.filter(s=>s.friendly);pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});toast('Chefão neutralizado. Avance até o ponto de extração!');}else if(Math.random()<.12)pickups.push({x:e.x,y:GROUND-24,w:24,h:24,type:'health',used:false});}}
+function fire(){
+ const up=isPressed('KeyW')||isPressed('ArrowUp'),crouch=isPressed('KeyS')||isPressed('ArrowDown');
+ const x=p.x+14+(up?0:p.face*20),y=p.y+(up?4:crouch&&p.grounded?34:19);
+ const speed=p.bulletSpeed,spreads=p.weapon===2?[-.16,0,.16]:[0];
+ for(const spread of spreads){
+  shots.push({x,y,vx:up?Math.sin(spread)*speed:p.face*Math.cos(spread)*speed,vy:up?-Math.cos(spread)*speed:Math.sin(spread)*speed,life:1.5,friendly:true,power:p.power*(p.weapon===1?2:1),color:p.accent});
+ }
+ p.shot=p.weapon===1?.095:p.weapon===2?.26:p.fireDelay;
+ shake=Math.min(3,shake+(.35+.25*spreads.length));
+ muzzles.push({x,y,life:.085,maxLife:.085,up,face:p.face,color:p.accent});
+ casings.push({x:p.x+16,y:p.y+15,vx:-p.face*rand(55,95),vy:rand(-205,-130),life:.48});
+ tone(p.weapon===2?135:220,.045,'square',.026);burst(x,y,'#ffe6aa',3);progressGuide('fire');
+}
 function throwGrenade(){if(p.ammo<=0||p.grenade>0)return;p.ammo--;p.grenade=.55;grenades.push({x:p.x+14,y:p.y+12,w:8,h:8,vx:p.face*370,vy:-470,life:1.25,grounded:false});tone(500,.05);}
 function complete(){score+=500+lives*100;mode=level===LEVELS.length-1?'win':'between';persist(level===LEVELS.length-1);if(level===LEVELS.length-1)screen('AURORA<br><em>LIBERTADA</em>',`Você encerrou a ocupação e devolveu a energia à cidade. Pontuação final: ${score.toLocaleString('pt-BR')}. Obrigado por jogar Impacto Rebelde!`,'JOGAR NOVAMENTE',()=>start(),'CAMPANHA CONCLUÍDA • DANIEL SOLIZ');else screen('MISSÃO<br><em>CONCLUÍDA</em>',`Próximo destino: ${LEVELS[level+1].name}. ${LEVELS[level+1].subtitle}. Pontuação: ${score}.`,'PRÓXIMA MISSÃO',()=>{level++;lives=Math.min(5,lives+1);loadLevel();});}
 function pause(){if(mode==='play'){mode='pause';screen('OPERAÇÃO<br><em>EM PAUSA</em>','Respire. O campo de batalha espera por você.','VOLTAR AO JOGO',resume);}else if(mode==='pause')resume();}
 function resume(){mode='play';overlay.hidden=true;clearInput();canvas.focus();}
 const activePointers=new Map();
 function clearInput(){keys.clear();touchKeys.clear();activePointers.clear();document.querySelectorAll?.('[data-key]').forEach(button=>button.classList.remove('pressed'));}
-function pressAction(code){if(code==='Space')p.buffer=.14;if(code==='KeyK')throwGrenade();}
+function pressAction(code){if(code==='Space'){p.buffer=.14;progressGuide('jump');}if(code==='KeyK')throwGrenade();}
 function releaseJump(){if(!isPressed('Space')&&p.vy< -240)p.vy=-240;}
 const gameKeys=['KeyA','KeyD','KeyW','KeyS','ArrowLeft','ArrowRight','ArrowUp','ArrowDown','Space','KeyJ','KeyK','Escape','KeyP'];
 window.addEventListener('keydown',e=>{if(!gameKeys.includes(e.code))return;e.preventDefault();if(e.code==='Escape'||e.code==='KeyP'){if(!e.repeat)pause();return;}if(mode!=='play')return;if(!e.repeat)pressAction(e.code);keys.add(e.code);});
@@ -83,15 +131,20 @@ $('#touch-exit').onclick=()=>leaveMobileView();
 $('#fullscreen').onclick=async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else{await $('#game-shell').requestFullscreen();if(touchEnabled)try{await window.screen?.orientation?.lock?.('landscape');}catch{}}}catch{toast('O jogo já usa o layout horizontal no celular.');}};
 window.addEventListener('resize',()=>clearInput());
 
-function update(dt){time+=dt;if(mode!=='play'){for(const q of particles)q.life-=dt;return;}banner=Math.max(0,banner-dt);shake=Math.max(0,shake-30*dt);p.inv=Math.max(0,p.inv-dt);p.shot-=dt;p.grenade-=dt;p.buffer=Math.max(0,p.buffer-dt);p.weaponTime-=dt;if(p.weaponTime<=0)p.weapon=0;const left=isPressed('KeyA')||isPressed('ArrowLeft'),right=isPressed('KeyD')||isPressed('ArrowRight'),crouch=(isPressed('KeyS')||isPressed('ArrowDown'))&&p.grounded;p.vx=(Number(right)-Number(left))*(crouch?105:260);if(p.vx)p.face=Math.sign(p.vx);if(p.grounded)p.coyote=.1;else p.coyote=Math.max(0,p.coyote-dt);if(p.buffer>0&&p.coyote>0){p.vy=-580;p.grounded=false;p.coyote=0;p.buffer=0;tone(360,.09,'triangle');}moveActor(p,dt,platforms);p.x=clamp(p.x,0,LEVELS[level].length-p.w);if(p.y>H+100)damage(100);if(isPressed('KeyJ')&&p.shot<=0)fire();
+function update(dt){time+=dt;if(mode!=='play'){for(const q of particles)q.life-=dt;return;}banner=Math.max(0,banner-dt);shake=Math.max(0,shake-30*dt);p.inv=Math.max(0,p.inv-dt);p.shot-=dt;p.grenade-=dt;p.buffer=Math.max(0,p.buffer-dt);p.weaponTime-=dt;if(guide){guide.elapsed+=dt;if(guide.elapsed>20)finishGuide();}if(p.weaponTime<=0)p.weapon=0;const left=isPressed('KeyA')||isPressed('ArrowLeft'),right=isPressed('KeyD')||isPressed('ArrowRight'),crouch=(isPressed('KeyS')||isPressed('ArrowDown'))&&p.grounded;p.vx=(Number(right)-Number(left))*(crouch?105:p.speed);if(p.vx)progressGuide('move');if(p.vx)p.face=Math.sign(p.vx);if(p.grounded)p.coyote=.1;else p.coyote=Math.max(0,p.coyote-dt);if(p.buffer>0&&p.coyote>0){p.vy=-580;p.grounded=false;p.coyote=0;p.buffer=0;tone(360,.09,'triangle');}moveActor(p,dt,platforms);p.x=clamp(p.x,0,LEVELS[level].length-p.w);if(p.y>H+100)damage(100);if(isPressed('KeyJ')&&p.shot<=0)fire();
 const cp=Math.floor(p.x/1100)*1100+90;if(cp>checkpoint&&cp<LEVELS[level].length-650){checkpoint=cp;toast('Checkpoint alcançado • granadas reabastecidas');p.ammo=Math.max(p.ammo,5);}
 for(const e of enemies){if(e.dead||Math.abs(e.x-p.x)>850)continue;e.flash=Math.max(0,(e.flash||0)-dt);if(['soldier','heavy','sniper'].includes(e.type)){e.x=e.origin+Math.sin(time*(e.type==='heavy'?.55:.9)+e.phase)*(e.type==='sniper'?18:48);e.y=GROUND-e.h;}else if(e.type==='drone'){e.y=GROUND-180+Math.sin(time*2+e.phase)*30;}else{e.w=38;e.h=34;e.y=GROUND-e.h;}e.cool-=dt;if(e.cool<=0&&Math.abs(p.x-e.x)<600){const dx=p.x+14-e.x-e.w/2,dy=p.y+22-e.y-15,d=Math.hypot(dx,dy);shots.push({x:e.x+e.w/2,y:e.y+15,vx:dx/Math.max(1,d)*(e.type==='sniper'?420+level*8:220+level*16),vy:dy/Math.max(1,d)*(e.type==='sniper'?420+level*8:220+level*16),life:4,friendly:false});e.cool=Math.max(.8,2.05+Math.random()*.5-level*.13);if(e.type==='heavy'){shots.push({x:e.x+e.w/2,y:e.y+22,vx:dx/Math.max(1,d)*(205+level*14),vy:dy/Math.max(1,d)*(205+level*14)+35,life:4,friendly:false});}}if(overlap(p,e))damage(15);}
 boss.active ||= p.x>boss.x-650;if(boss.active&&!boss.dead){boss.phase+=dt;boss.flash=Math.max(0,(boss.flash||0)-dt);boss.y=GROUND-boss.h+(level===3?Math.sin(boss.phase*1.7)*45-45:0);boss.cool-=dt;if(boss.cool<=0){const dx=p.x+14-(boss.x+20),dy=p.y+20-(boss.y+50),a=Math.atan2(dy,dx),count=boss.hp<boss.max*.5?Math.min(7,4+Math.floor(level/2)):3+Math.floor(level/4);for(let n=0;n<count;n++){const t=a+(n-(count-1)/2)*.16;shots.push({x:boss.x+20,y:boss.y+50,vx:Math.cos(t)*(220+level*12),vy:Math.sin(t)*(220+level*12),life:5,friendly:false});}boss.cool=Math.max(.7,1.7-level*.115);if(level>=2){shots.push({x:boss.x,y:GROUND-9,vx:-185-level*15,vy:0,life:5,friendly:false});}if(level>=5&&boss.hp<boss.max*.5){shots.push({x:boss.x+75,y:boss.y,vx:-160-level*8,vy:-280,gravity:380,life:4,friendly:false});}tone(90,.1,'triangle',.015);}if(overlap(p,boss))damage(25);}
-for(const s of shots){const x=s.x,y=s.y;s.x+=s.vx*dt;if(s.gravity)s.vy+=s.gravity*dt;s.y+=s.vy*dt;s.life-=dt;if(s.friendly){for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&segmentHit(x,y,s.x,s.y,e)){hitEnemy(e,s.power);s.life=0;break;}}else{const r=crouch?{x:p.x,y:p.y+22,w:p.w,h:26}:p;if(segmentHit(x,y,s.x,s.y,r)){damage(12);s.life=0;}}if(s.y>GROUND)s.life=0;}
+for(const s of shots){const x=s.x,y=s.y;s.x+=s.vx*dt;if(s.gravity)s.vy+=s.gravity*dt;s.y+=s.vy*dt;s.life-=dt;if(s.friendly){for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&segmentHit(x,y,s.x,s.y,e)){hitEnemy(e,s.power);s.life=0;break;}}else{const r=crouch?{x:p.x,y:p.y+22,w:p.w,h:26}:p;if(segmentHit(x,y,s.x,s.y,r)){damage(12);impactFX(s.x,s.y,'#ff8c6d',5);s.life=0;}}if(s.y>GROUND){if(s.life>0&&s.friendly)impactFX(s.x,GROUND,'#c6ad80',3);s.life=0;}}
 shots=shots.filter(s=>s.life>0&&Math.abs(s.x-p.x)<1200&&s.y>-200);
 for(const g of grenades){moveActor(g,dt,platforms);if(g.grounded)g.vx*=.94;g.life-=dt;if(g.life<=0){burst(g.x,g.y,'#ffbc58',45);shake=9;tone(60,.3,'sawtooth',.05);for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&Math.hypot(e.x+e.w/2-g.x,e.y+e.h/2-g.y)<180)hitEnemy(e,26);}}grenades=grenades.filter(g=>g.life>0);
-for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=500*dt;q.life-=dt;}particles=particles.filter(q=>q.life>0).slice(-300);
-for(const item of pickups)if(!item.used&&overlap(p,item)){item.used=true;if(item.type==='health'){p.hp=Math.min(100,p.hp+30);toast('Kit médico +30');}else{p.weapon=level%2+1;p.weaponTime=22;p.ammo+=3;toast(p.weapon===1?'METRALHADORA • 22 segundos':'ESCOPETA • 22 segundos');}tone(600,.15,'triangle');}
+for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=500*dt;q.life-=dt;}
+particles=particles.filter(q=>q.life>0).slice(-320);
+for(const m of muzzles)m.life-=dt;muzzles=muzzles.filter(m=>m.life>0).slice(-25);
+for(const h of hits)h.life-=dt;hits=hits.filter(h=>h.life>0).slice(-40);
+for(const c of casings){c.x+=c.vx*dt;c.y+=c.vy*dt;c.vy+=750*dt;c.life-=dt;}
+casings=casings.filter(c=>c.life>0).slice(-50);
+for(const item of pickups)if(!item.used&&overlap(p,item)){item.used=true;if(item.type==='health'){p.hp=Math.min(p.maxHp,p.hp+30);toast('Kit médico +30');}else{p.weapon=level%2+1;p.weaponTime=22;p.ammo+=3;toast(p.weapon===1?'METRALHADORA • 22 segundos':'ESCOPETA • 22 segundos');}tone(600,.15,'triangle');}
 for(const h of hostages)if(!h.saved&&overlap(p,h)){h.saved=true;score+=300;p.ammo+=2;toast('Civil resgatado • +300 pontos • +2 granadas');tone(700,.18,'triangle');}
 for(const h of traps)if(hazardActive(h,time)&&overlap(p,h))damage(18+level);
 camera=clamp(p.x-W*.32,0,LEVELS[level].length-W);if(boss.dead&&p.x>LEVELS[level].length-100)complete();}
@@ -192,7 +245,7 @@ const CHARACTER_REGIONS=[
 ];
 function illustratedSoldier(x,y,face,friendly,walk,crouch,role,variant){
  if(!characterAtlas?.complete||!characterAtlas.naturalWidth||role==='civilian')return false;
- const index=friendly?0:role==='heavy'?3:role==='sniper'?2:variant??1;
+ const index=friendly?p.heroSprite:role==='heavy'?3:role==='sniper'?2:variant??1;
  const region=CHARACTER_REGIONS[index],sourceY=125,sourceH=523;
  // Feet stay attached to the physics body; visual size does not alter hitboxes.
  const height=friendly?62:58,width=height*region.w/sourceH,feet=y+(friendly?48:42);
@@ -214,10 +267,10 @@ function illustratedSoldier(x,y,face,friendly,walk,crouch,role,variant){
  }
  // Directional barrel makes upward aim legible; gun recoil uses the firing cooldown.
  if(friendly&&(isPressed('KeyW')||isPressed('ArrowUp'))){rect(1,-height-9,4,24,'#172b38');rect(2,-height-8,1,17,'#a5d9e3');}
- if(friendly&&isPressed('KeyJ')&&p.shot>.1){const up=isPressed('KeyW')||isPressed('ArrowUp');const fx=up?3:width/2+2,fy=up?-height-13:-height*.52;ctx.fillStyle='#ffdc82';ctx.beginPath();ctx.moveTo(fx-3,fy);ctx.lineTo(fx+(up?0:9),fy-5);ctx.lineTo(fx+4,fy+2);ctx.lineTo(fx,fy+5);ctx.fill();}
+ if(friendly&&isPressed('KeyJ')&&p.shot>.07){const up=isPressed('KeyW')||isPressed('ArrowUp');const fx=up?3:width/2+2,fy=up?-height-13:-height*.52;ctx.fillStyle='#ffdc82';ctx.beginPath();ctx.moveTo(fx-3,fy);ctx.lineTo(fx+(up?0:9),fy-5);ctx.lineTo(fx+4,fy+2);ctx.lineTo(fx,fy+5);ctx.fill();}
  ctx.restore();return true;
 }
-function soldier(x,y,face,friendly=false,walk=0,crouch=false,role='soldier',variant=1){if(illustratedSoldier(x,y,face,friendly,walk,crouch,role,variant))return;const armor=friendly?'#e7b76b':role==='heavy'?'#a3a3a1':role==='sniper'?'#b5b193':'#8eaa89',shadow=friendly?'#8d613c':'#4a6559',pants=friendly?'#365e78':'#3d514f',skin='#eec69f';
+function soldier(x,y,face,friendly=false,walk=0,crouch=false,role='soldier',variant=1){if(illustratedSoldier(x,y,face,friendly,walk,crouch,role,variant))return;const armor=friendly?p.accent:role==='heavy'?'#a3a3a1':role==='sniper'?'#b5b193':'#8eaa89',shadow=friendly?'#8d613c':'#4a6559',pants=friendly?'#365e78':'#3d514f',skin='#eec69f';
 const yy=y+(crouch?20:0),step=crouch?0:Math.sin(walk)*5;
 rect(x-5,y+(friendly?48:42),39,3,'#00000035');
 // Silhouette, boots, articulated legs and shaded armor; same collision footprint.
@@ -238,8 +291,25 @@ if(level===6){rect(x+86,y-38,11,61,'#668898');rect(x+40,y-38,57,9,'#668898');rec
 if(level===8){rect(x+60,y-38,32,43,'#436a82');rect(x+65,y-32,22,28,'#80dddc');rect(x-12,y+65,174,7,'#78bec8');}
 for(let j=0;j<6;j++){rect(x+12+j*21,y+40,16,2,'#ffffff35');rect(x+18+j*21,y+57,2,2,'#cad6ce');rect(x+17+j*21,y+85,2,2,'#132634');}rect(x+8,y+38,b.w-16,3,'#ffffff25');rect(x+8,y+b.h-34,b.w-16,7,'#00000035');rect(x+12,y+43,5,25,'#ffffff30');rect(x+21,y+70,30,4,'#192f3c');rect(x+95,y+70,25,4,'#192f3c');
 if(b.active){rect(245,78,470,26,'#0b1523dd');rect(250,98,460,4,'#ffffff20');rect(250,98,460*Math.max(0,b.hp/b.max),4,'#ffae62');text(LEVELS[level].boss.toUpperCase(),480,91,10,'#f5bc74','center');}}
-function draw(){ctx.save();if(shake)ctx.translate(rand(-shake,shake),rand(-shake/2,shake/2));background();ctx.save();ctx.translate(-Math.round(camera),0);const l=LEVELS[level];for(const platform of platforms.slice(1))themedPlatform(platform);for(let x=320;x<l.length-650;x+=740){rect(x,GROUND-29,42,29,'#776d51');rect(x+3,GROUND-26,36,3,'#baa372');rect(x+18,GROUND-25,4,22,'#4e4b37');}drawHazards();for(const h of hostages)if(!h.saved){soldier(h.x,h.y,1,false,0,true,'civilian');text('SOS',h.x+12,h.y-10,11,'#ffd77d','center');}for(const e of enemies)if(!e.dead){if(['soldier','heavy','sniper'].includes(e.type))soldier(e.x,e.y,p.x>e.x?1:-1,false,e.type==='sniper'?0:time*8,false,e.type,e.skin);else if(e.type==='drone'){rect(e.x-12,e.y+6,55,7,'#9aafae');rect(e.x,e.y,28,20,e.flash?'#fff':'#4a6a77');rect(e.x+10,e.y+18,7,10,'#ffbd67');rect(e.x-16,e.y+4,12,3,'#263942');rect(e.x+42,e.y+4,12,3,'#263942');}else{rect(e.x,e.y+12,38,22,'#526b68');rect(e.x+5,e.y,28,18,'#8e9b80');rect(e.x-13,e.y+4,24,6,'#293d45');}if(e.flash)rect(e.x+5,e.y,16,4,'#ffdc9d');}drawBoss();for(const i of pickups)if(!i.used){const y=i.y+Math.sin(time*4)*3;rect(i.x-2,y-2,28,28,'#142d3a');rect(i.x,y,24,24,i.type==='health'?'#8fc5b0':'#efb766');text(i.type==='health'?'+':'W',i.x+12,y+17,18,'#162d38','center');}for(const g of grenades){rect(g.x,g.y,8,10,'#a9bd77');rect(g.x+2,g.y-3,4,4,'#fff0ac');}for(const s of shots){rect(s.x-(s.friendly?6:3),s.y-2,s.friendly?14:7,4,s.friendly?'#ffe4a1':'#ff7d62');}if(p.inv<=0||Math.floor(time*18)%2===0)soldier(p.x,p.y,p.face,true,p.vx?time*13:0,(isPressed('KeyS')||isPressed('ArrowDown'))&&p.grounded);for(const q of particles)rect(q.x,q.y,q.size,q.size,q.color);const exit=l.length-90;rect(exit,GROUND-125,6,125,'#c4d5d9');rect(exit+6,GROUND-125,55,35,boss.dead?'#9fdaaf':'#ad7770');text(boss.dead?'SAÍDA':'BLOQUEADO',exit-15,GROUND-145,11,boss.dead?'#c4eccb':'#f1ba97');ctx.restore();ctx.restore();
-rect(0,0,W,61,'#0a1724ed');text('IR',20,34,24,'#ffbd66');text('AGENTE • RESISTÊNCIA',67,21,10,'#98aebb');rect(67,29,160,10,'#ffffff15');rect(67,29,160*Math.max(0,p.hp/100),10,p.hp<30?'#ef7d68':'#a6d3a6');text(`${Math.max(0,p.hp)} HP`,237,39,11);text(`VIDAS ${lives}`,325,24,12);text(`GRANADAS ${p.ammo}`,325,43,10,'#edc386');text(`MISSÃO ${level+1}/${LEVELS.length}`,500,24,12,'#ffbf6b');text(LEVELS[level].name.toUpperCase(),500,43,10,'#b7c9d4');text(String(score).padStart(7,'0'),W-20,32,20,'#f2ead4','right');text(p.weapon===0?'FUZIL':`${p.weapon===1?'METRALHADORA':'ESCOPETA'} ${Math.ceil(Math.max(0,p.weaponTime))}s`,22,H-18,12,'#ffcf85');rect(W-220,H-28,195,5,'#ffffff20');rect(W-220,H-28,195*clamp(p.x/LEVELS[level].length,0,1),5,'#e8ba77');if(banner>0&&mode==='play'){rect(250,135,460,64,'#0d1d2ae8');text(`MISSÃO ${level+1} — ${LEVELS[level].name.toUpperCase()}`,480,162,18,'#ffcb82','center');text(LEVELS[level].subtitle,480,184,11,'#d2dee0','center');}}
+function draw(){ctx.save();if(shake)ctx.translate(rand(-shake,shake),rand(-shake/2,shake/2));background();ctx.save();ctx.translate(-Math.round(camera),0);const l=LEVELS[level];for(const platform of platforms.slice(1))themedPlatform(platform);for(let x=320;x<l.length-650;x+=740){rect(x,GROUND-29,42,29,'#776d51');rect(x+3,GROUND-26,36,3,'#baa372');rect(x+18,GROUND-25,4,22,'#4e4b37');}drawHazards();for(const h of hostages)if(!h.saved){soldier(h.x,h.y,1,false,0,true,'civilian');text('SOS',h.x+12,h.y-10,11,'#ffd77d','center');}for(const e of enemies)if(!e.dead){if(['soldier','heavy','sniper'].includes(e.type))soldier(e.x,e.y,p.x>e.x?1:-1,false,e.type==='sniper'?0:time*8,false,e.type,e.skin);else if(e.type==='drone'){rect(e.x-12,e.y+6,55,7,'#9aafae');rect(e.x,e.y,28,20,e.flash?'#fff':'#4a6a77');rect(e.x+10,e.y+18,7,10,'#ffbd67');rect(e.x-16,e.y+4,12,3,'#263942');rect(e.x+42,e.y+4,12,3,'#263942');}else{rect(e.x,e.y+12,38,22,'#526b68');rect(e.x+5,e.y,28,18,'#8e9b80');rect(e.x-13,e.y+4,24,6,'#293d45');}if(e.flash)rect(e.x+5,e.y,16,4,'#ffdc9d');}drawBoss();for(const i of pickups)if(!i.used){const y=i.y+Math.sin(time*4)*3;rect(i.x-2,y-2,28,28,'#142d3a');rect(i.x,y,24,24,i.type==='health'?'#8fc5b0':'#efb766');text(i.type==='health'?'+':'W',i.x+12,y+17,18,'#162d38','center');}for(const g of grenades){rect(g.x,g.y,8,10,'#a9bd77');rect(g.x+2,g.y-3,4,4,'#fff0ac');}for(const s of shots){
+ ctx.save();ctx.globalCompositeOperation='lighter';
+ const a=Math.atan2(s.vy,s.vx),len=s.friendly?19:9,col=s.friendly?(s.color||'#85dafa'):'#ff9675';
+ ctx.strokeStyle=col;ctx.globalAlpha=s.friendly?.9:.75;ctx.lineWidth=s.friendly?3:2;
+ ctx.beginPath();ctx.moveTo(s.x,s.y);ctx.lineTo(s.x-Math.cos(a)*len,s.y-Math.sin(a)*len);ctx.stroke();
+ ctx.fillStyle=s.friendly?'#fff5d4':'#ffc9a7';ctx.beginPath();ctx.arc(s.x,s.y,s.friendly?3.1:2.3,0,Math.PI*2);ctx.fill();ctx.restore();
+}
+for(const c of casings){ctx.save();ctx.globalAlpha=Math.min(1,c.life*3);rect(c.x,c.y,4,2,'#ffd587');ctx.restore();}
+for(const h of hits){
+ ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=Math.max(0,h.life/h.maxLife)*.65;
+ ctx.strokeStyle=h.color;ctx.lineWidth=2;ctx.beginPath();ctx.arc(h.x,h.y,2+(1-h.life/h.maxLife)*13,0,Math.PI*2);ctx.stroke();ctx.restore();
+}
+for(const m of muzzles){
+ const k=m.life/m.maxLife;ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=k;
+ ctx.translate(m.x,m.y);ctx.rotate(m.up?-Math.PI/2:(m.face<0?Math.PI:0));ctx.fillStyle='#ffe6a1';
+ ctx.beginPath();ctx.moveTo(0,-5*k);ctx.lineTo(12+10*k,0);ctx.lineTo(0,5*k);ctx.closePath();ctx.fill();
+ ctx.fillStyle=m.color;ctx.fillRect(-4,-3,7,6);ctx.restore();
+}if(p.inv<=0||Math.floor(time*18)%2===0)soldier(p.x,p.y,p.face,true,p.vx?time*13:0,(isPressed('KeyS')||isPressed('ArrowDown'))&&p.grounded);for(const q of particles)rect(q.x,q.y,q.size,q.size,q.color);const exit=l.length-90;rect(exit,GROUND-125,6,125,'#c4d5d9');rect(exit+6,GROUND-125,55,35,boss.dead?'#9fdaaf':'#ad7770');text(boss.dead?'SAÍDA':'BLOQUEADO',exit-15,GROUND-145,11,boss.dead?'#c4eccb':'#f1ba97');ctx.restore();ctx.restore();
+rect(0,0,W,61,'#0a1724ed');text('IR',20,34,24,'#ffbd66');text(`${p.heroName} • RESISTÊNCIA`,67,21,10,'#98aebb');rect(67,29,160,10,'#ffffff15');rect(67,29,160*Math.max(0,p.hp/p.maxHp),10,p.hp<30?'#ef7d68':'#a6d3a6');text(`${Math.max(0,Math.ceil(p.hp))}/${p.maxHp} HP`,237,39,11);text(`VIDAS ${lives}`,325,24,12);text(`GRANADAS ${p.ammo}`,325,43,10,'#edc386');text(`MISSÃO ${level+1}/${LEVELS.length}`,500,24,12,'#ffbf6b');text(LEVELS[level].name.toUpperCase(),500,43,10,'#b7c9d4');text(String(score).padStart(7,'0'),W-20,32,20,'#f2ead4','right');text(p.weapon===0?'FUZIL':`${p.weapon===1?'METRALHADORA':'ESCOPETA'} ${Math.ceil(Math.max(0,p.weaponTime))}s`,22,H-18,12,'#ffcf85');rect(W-220,H-28,195,5,'#ffffff20');rect(W-220,H-28,195*clamp(p.x/LEVELS[level].length,0,1),5,'#e8ba77');if(banner>0&&mode==='play'){rect(250,135,460,64,'#0d1d2ae8');text(`MISSÃO ${level+1} — ${LEVELS[level].name.toUpperCase()}`,480,162,18,'#ffcb82','center');text(LEVELS[level].subtitle,480,184,11,'#d2dee0','center');}}
 platforms=layout(0);enemies=makeEnemies(0);boss=makeBoss(0);camera=350;p.x=450;primary.onclick=()=>start(Number($('#mission-select').value)||0);if(save){secondary.hidden=false;secondary.onclick=()=>start(save.won?0:save.level,true);}
 let last=0,accumulator=0;function frame(now){const delta=Math.min(.1,(now-last)/1000||0);last=now;accumulator+=delta;while(accumulator>=1/120){update(1/120);accumulator-=1/120;}draw();requestAnimationFrame(frame);}requestAnimationFrame(frame);
 const packagedAndroid=new URLSearchParams(location.search).get('apk')==='1';
