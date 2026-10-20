@@ -10,6 +10,12 @@ export const LEVELS=[
  {name:'Cidade Suspensa',subtitle:'Sabote os geradores dos viadutos',sky:'#343450',far:'#535477',near:'#343857',ground:'#59627d',accent:'#baafe3',boss:'Sentinela do Horizonte',type:8,length:6100},
  {name:'Núcleo Aurora',subtitle:'Destrua o núcleo e encerre a ocupação',sky:'#222f4b',far:'#394666',near:'#242e49',ground:'#4b566b',accent:'#75d1d5',boss:'Comandante Aurora',type:5,length:6500}
 ];
+export const HEROES=[
+ {id:'cobalto',name:'COBALTO',title:'Soldado de elite',sprite:0,maxHp:100,speed:260,fireDelay:.16,bulletSpeed:800,power:1,accent:'#78c8ec'},
+ {id:'vespa',name:'VESPA',title:'Batedor veloz',sprite:4,maxHp:85,speed:315,fireDelay:.115,bulletSpeed:920,power:.85,accent:'#e6c16c'},
+ {id:'tita',name:'TITÃ',title:'Blindado de assalto',sprite:3,maxHp:140,speed:210,fireDelay:.22,bulletSpeed:720,power:1.5,accent:'#ef9d78'}
+];
+export const heroById=id=>HEROES.find(hero=>hero.id===id)||HEROES[0];
 export const overlap=(a,b)=>a.x<b.x+b.w&&a.x+a.w>b.x&&a.y<b.y+b.h&&a.y+a.h>b.y;
 // Different traversals: piers, canopy steps, ruins, ridge, catwalks, dunes,
 // shipping containers, overpasses, reactor gantries. All heights are jump reachable.
@@ -30,7 +36,7 @@ export function hazardActive(h,time){return (time+h.phase)%h.period>h.period*.55
 // One-way platforms. Sweep the feet over the entire frame to avoid tunnelling.
 export function moveActor(a,dt,platforms){const previousBottom=a.y+a.h;a.vy+=1450*dt;a.x+=a.vx*dt;a.y+=a.vy*dt;a.grounded=false;if(a.vy>=0){let landing=Infinity;for(const p of platforms)if(a.x+a.w>p.x&&a.x<p.x+p.w&&previousBottom<=p.y+.5&&a.y+a.h>=p.y)landing=Math.min(landing,p.y);if(landing!==Infinity){a.y=landing-a.h;a.vy=0;a.grounded=true;}}}
 export function segmentHit(x0,y0,x1,y1,r){let lo=0,hi=1;for(const [s,d,min,max] of [[x0,x1-x0,r.x,r.x+r.w],[y0,y1-y0,r.y,r.y+r.h]]){if(Math.abs(d)<1e-9){if(s<min||s>max)return false;}else{let a=(min-s)/d,b=(max-s)/d;if(a>b)[a,b]=[b,a];lo=Math.max(lo,a);hi=Math.min(hi,b);if(lo>hi)return false;}}return true;}
-export function makePlayer(){return{x:90,y:GROUND-48,w:28,h:48,vx:0,vy:0,face:1,hp:100,grounded:true,inv:1,coyote:0,buffer:0,shot:0,grenade:0,ammo:8,weapon:0,weaponTime:0};}
+export function makePlayer(heroId='cobalto'){const hero=heroById(heroId);return{x:90,y:GROUND-48,w:28,h:48,vx:0,vy:0,face:1,hp:hero.maxHp,maxHp:hero.maxHp,heroId:hero.id,heroName:hero.name,heroSprite:hero.sprite,speed:hero.speed,fireDelay:hero.fireDelay,bulletSpeed:hero.bulletSpeed,power:hero.power,accent:hero.accent,grounded:true,inv:1,coyote:0,buffer:0,shot:0,grenade:0,ammo:8,weapon:0,weaponTime:0};}
 export function makeEnemies(index){const l=LEVELS[index],arr=[];for(let x=640,n=0;x<l.length-650;x+=Math.max(115,190-index*9),n++)arr.push({x,y:GROUND-42,w:28,h:42,hp:3+Math.floor(index/2),max:3+Math.floor(index/2),type:index>=3&&n%6===0?'heavy':index>=2&&n%6===1?'sniper':n%8===6?'drone':n%8===7?'turret':'soldier',cool:.9+(n%4)*.25,origin:x,phase:n,skin:[1,4,5,6,7][(n+index)%5],dead:false});return arr;}
 export function makeBoss(index){const l=LEVELS[index];return{x:l.length-420,y:GROUND-120,w:150,h:120,hp:115+index*32,max:115+index*32,cool:2,phase:0,active:false,dead:false,type:index};}
 export function loadSave(storage){try{const s=JSON.parse(storage.getItem('impacto-rebelde-v1'));if(s&&Number.isInteger(s.level)&&s.level>=0&&s.level<LEVELS.length&&Number.isFinite(s.score)&&s.score>=0)return{level:s.level,score:s.score,won:!!s.won};}catch{}return null;}
