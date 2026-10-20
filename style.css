@@ -107,3 +107,17 @@ body.mobile-session .game-shell .overlay{z-index:1}
 @media(max-width:760px){.hero-picker{margin:7px 0}.hero-picker-heading span{display:none}.hero-options{gap:4px}.hero-option{min-height:64px;padding:3px}.hero-avatar{width:31px;height:46px;flex-basis:31px;background-size:211px 70px;background-position:0 -13px}.hero-vespa{background-position:-103px -13px}.hero-tita{background-position:-77px -13px}.hero-copy strong{font-size:10px}.hero-copy small{font-size:8px}.training-guide{top:66px;right:8px;padding:7px 10px;max-width:210px}.guide-steps span{font-size:9px}}
 @media(max-width:440px){.hero-option{flex-direction:column;align-items:center;min-height:75px}.hero-copy{text-align:center}}
 @media(max-height:540px) and (orientation:landscape){.hero-picker{margin:5px 0}.hero-option{min-height:53px}.hero-avatar{height:42px}.hero-picker-heading{margin-bottom:4px}}
+
+/* Menu visível e clicável em telas pequenas: tela de heróis e dificuldade. */
+.overlay{z-index:3;overflow:hidden;align-items:center;background:linear-gradient(95deg,#091823fa 0%,#0a1c28f5 65%,#102a3675 100%)}
+.overlay .panel{width:min(100%,660px);max-height:100%;overflow-y:auto;overscroll-behavior:contain;scrollbar-width:thin;scrollbar-color:#6f97a2 #102632;position:relative;z-index:4;padding:clamp(13px,2.4vw,29px)}
+.overlay .panel h1{font-size:clamp(30px,4.5vw,57px);line-height:.92}
+.hero-option{cursor:pointer;touch-action:manipulation;pointer-events:auto}
+.hero-options{position:relative;z-index:5}
+.hero-picker{max-width:570px}
+.difficulty-select{display:flex;gap:10px;align-items:center;margin:9px 0 10px;font-size:10px;color:#fac77e;letter-spacing:1px}
+.difficulty-select select{width:min(100%,200px);background:#182d3c;color:#f3efe6;padding:9px;border:1px solid #78939b;border-radius:5px;font-size:11px}
+#primary{position:relative;z-index:6;min-height:47px}
+@media(max-width:760px){.overlay .panel{padding:10px}.overlay .panel h1{font-size:clamp(26px,6vw,45px)}.hero-picker{margin:5px 0}.hero-option{min-height:58px}.difficulty-select{margin:5px 0}.difficulty-select select{padding:6px;font-size:10px}.panel .primary{min-height:36px}
+}
+.overlay .panel{max-width:670px}.overlay .panel .hero-options{margin-bottom:7px}.overlay .panel .difficulty-select{max-width:480px}
