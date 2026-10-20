@@ -19,3 +19,12 @@ test('hero roster has unique IDs, distinct stats and safe fallback',()=>{
  assert.equal(makePlayer('invalid').heroId,'cobalto');
  assert.equal(heroById('vespa').sprite,4);
 });
+
+test('each stage boss has a distinct family and later stages are longer',()=>{
+ const families=LEVELS.map((_,index)=>makeBoss(index).family);
+ assert.equal(families.length,9);
+ assert.equal(new Set(families).size,9);
+ assert.equal(makeBoss(3).family,'gunship');
+ assert.equal(makeBoss(7).family,'drone');
+ for(let i=1;i<LEVELS.length;i++)assert.ok(LEVELS[i].length>LEVELS[i-1].length);
+});
