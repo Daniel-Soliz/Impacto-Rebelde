@@ -230,7 +230,26 @@ for(const plane of aircraft){
 aircraft=aircraft.filter(plane=>plane.life>0);
 for(const s of shots){const x=s.x,y=s.y;s.x+=s.vx*dt;if(s.gravity)s.vy+=s.gravity*dt;s.y+=s.vy*dt;s.life-=dt;if(s.friendly){for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&segmentHit(x,y,s.x,s.y,e)){hitEnemy(e,s.power);s.life=0;break;}}else{const r=crouch?{x:p.x,y:p.y+22,w:p.w,h:26}:p;if(segmentHit(x,y,s.x,s.y,r)){damage(12);impactFX(s.x,s.y,'#ff8c6d',5);s.life=0;}}if(s.y>GROUND){if(s.life>0&&s.friendly)impactFX(s.x,GROUND,'#c6ad80',3);s.life=0;}}
 shots=shots.filter(s=>s.life>0&&Math.abs(s.x-p.x)<1200&&s.y>-200);
-for(const g of grenades){moveActor(g,dt,platforms);if(g.grounded)g.vx*=.94;g.life-=dt;if(g.life<=0){burst(g.x,g.y,'#ffbc58',45);shake=9;tone(60,.3,'sawtooth',.05);for(const e of [...enemies,boss])if(!e.dead&&(e!==boss||boss.active)&&Math.hypot(e.x+e.w/2-g.x,e.y+e.h/2-g.y)<180)hitEnemy(e,26);}}grenades=grenades.filter(g=>g.life>0);
+for(const g of grenades){
+ moveActor(g,dt,platforms);g.life-=dt;
+ if(g.grounded&&g.bounces<1){g.bounces++;g.vy=-175;g.grounded=false;g.vx*=.7;}
+ else if(g.grounded)g.vx*=.94;
+ if(g.life<=0){
+  const radius=225;
+  explosions.push({x:g.x,y:g.y,radius,life:.42,maxLife:.42});
+  burst(g.x,g.y,'#ffc77e',68);impactFX(g.x,g.y,'#ffad55',28);
+  shake=14;tone(65,.33,'sawtooth',.055);
+  for(const e of [...enemies,boss]){
+   if(e.dead||(e===boss&&!boss.active))continue;
+   const distance=Math.hypot(e.x+e.w/2-g.x,e.y+e.h/2-g.y);
+   if(distance<radius)hitEnemy(e,Math.max(16,Math.round(65*(1-distance/radius))));
+  }
+  for(const s of shots)if(!s.friendly&&Math.hypot(s.x-g.x,s.y-g.y)<radius*.6)s.life=0;
+ }
+}
+grenades=grenades.filter(g=>g.life>0);
+for(const ring of explosions)ring.life-=dt;
+explosions=explosions.filter(ring=>ring.life>0);
 for(const q of particles){q.x+=q.vx*dt;q.y+=q.vy*dt;q.vy+=500*dt;q.life-=dt;}
 particles=particles.filter(q=>q.life>0).slice(-320);
 for(const m of muzzles)m.life-=dt;muzzles=muzzles.filter(m=>m.life>0).slice(-25);
