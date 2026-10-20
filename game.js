@@ -274,7 +274,7 @@ for(const item of BIOMES){if(!item||biomeImages[item[0]])continue;const img=new 
 function drawBiome(){
  const item=BIOMES[level];if(!item)return false;
  const img=biomeImages[item[0]];if(!img?.complete||!img.naturalWidth)return false;
- ctx.save();ctx.imageSmoothingEnabled=item[0]!=='forest-paint.jpg';
+ ctx.save();ctx.imageSmoothingEnabled=item[0]==='forest-paint.jpg';
  const offset=Math.sin(camera*.0013)*15;
  if(item.length>1)ctx.drawImage(img,0,item[1],736,315,-20+offset,-7,1000,465);
  else ctx.drawImage(img,-20+offset,-7,1000,465);
